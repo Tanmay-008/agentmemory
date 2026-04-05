@@ -1,6 +1,6 @@
 {
   "name": "agentmemory",
-  "version": "0.7.0",
+  "version": "0.7.2",
   "description": "Persistent memory for AI coding agents -- captures tool usage, compresses via LLM, injects context into future sessions. 12 hooks, 41 MCP tools, 4 skills, real-time viewer.",
   "author": "Rohit Ghumare",
   "license": "Apache-2.0",
