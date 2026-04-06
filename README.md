@@ -26,7 +26,7 @@
 
 ---
 
-Every AI coding agent has the same blind spot. Session ends, memory vanishes. You re-explain architecture. You re-discover bugs. You re-teach preferences. Built-in memory files like CLAUDE.md and .cursorrules are 200-line sticky notes that overflow and go stale. agentmemory replaces that with a searchable, versioned, cross-agent database — 41 MCP tools, triple-stream retrieval (BM25 + vector + knowledge graph), 4-tier memory consolidation, provenance-tracked citations, and cascading staleness so retired facts never pollute your context again. One instance serves Claude Code, Cursor, Codex, Windsurf, and any MCP client simultaneously. 581 tests. Zero external DB dependencies.
+Every AI coding agent has the same blind spot. Session ends, memory vanishes. You re-explain architecture. You re-discover bugs. You re-teach preferences. Built-in memory files like CLAUDE.md and .cursorrules are 200-line sticky notes that overflow and go stale. agentmemory replaces that with a searchable, versioned, cross-agent database — 41 MCP tools, triple-stream retrieval (BM25 + vector + knowledge graph), 4-tier memory consolidation, provenance-tracked citations, and cascading staleness so retired facts never pollute your context again. One instance serves Claude Code, Cursor, Codex, Windsurf, and any MCP client simultaneously. 614 tests. Zero external DB dependencies.
 
 The result is measurable. On 240 real observations across 30 sessions, agentmemory hits 64% Recall@10 and perfect MRR while using 92% fewer tokens than dumping everything into context. When an agent searches "database performance optimization," it finds the N+1 fix you made three weeks ago — something keyword grep literally cannot do. Memories version automatically, supersede each other, propagate staleness to related graph nodes, and sync across agent instances via P2P mesh. Your agents stop repeating mistakes. Your context stays clean. Your sessions start fast.
 
@@ -724,7 +724,7 @@ agentmemory is built on iii-engine's three primitives:
 | Prometheus / Grafana | iii OTEL + built-in health monitor |
 | Redis (circuit breaker) | In-process circuit breaker + fallback chain |
 
-**113 source files. ~20,000 LOC. 581 tests. Zero external DB dependencies.**
+**113 source files. ~20,000 LOC. 614 tests. Zero external DB dependencies.**
 
 ### Functions (89 mem:: functions)
 
@@ -740,7 +740,7 @@ agentmemory is built on iii-engine's three primitives:
 | | `consolidate`, `consolidate-pipeline` | Merge duplicates, 4-tier consolidation (working→episodic→semantic→procedural) |
 | | `verify`, `cascade-update` | Citation chain provenance, staleness propagation |
 | **Knowledge Graph** | `graph-extract`, `graph-query`, `graph-stats` | LLM entity extraction, BFS traversal, statistics |
-| | `temporal-graph` | Append-only versioned edges with point-in-time queries |
+| | `temporal-graph-extract`, `temporal-query` | Temporal knowledge extraction + point-in-time queries |
 | **Relationships** | `relate`, `get-related`, `timeline`, `profile` | Memory relations, chronological view, project profiles |
 | **Claude Bridge** | `claude-bridge-read`, `claude-bridge-sync` | Bi-directional sync with MEMORY.md |
 | **Actions** | `action-create`, `action-update`, `action-get`, `action-list` | Dependency-aware work items with typed edges |
@@ -808,7 +808,7 @@ agentmemory is built on iii-engine's three primitives:
 ```bash
 npm run dev               # Hot reload
 npm run build             # Production build (~425KB)
-npm test                  # Unit tests (581 tests, ~1.5s)
+npm test                  # Unit tests (614 tests, ~1.5s)
 npm run test:integration  # API tests (requires running services)
 ```
 

@@ -246,7 +246,7 @@ describe("Lessons", () => {
 
       expect(result.success).toBe(true);
       expect(result.lesson.reinforcements).toBe(1);
-      expect(result.lesson.confidence).toBeCloseTo(0.55, 1);
+      expect(result.lesson.confidence).toBeCloseTo(0.55, 2);
       expect(result.lesson.lastReinforcedAt).toBeDefined();
     });
 
@@ -344,7 +344,7 @@ describe("Lessons", () => {
       await sdk.trigger("mem::lesson-decay-sweep", {});
 
       const after = await kv.get<Lesson>("mem:lessons", saved.lesson.id);
-      expect(after!.confidence).toBeCloseTo(0.55, 1);
+      expect(after!.confidence).toBeCloseTo(0.55, 2);
       expect(after!.confidence).toBeGreaterThan(0.4);
     });
   });

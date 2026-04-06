@@ -273,4 +273,16 @@ describe("Obsidian Export", () => {
     expect(moc).toContain("[[crystals/crys_001|");
     expect(moc).toContain("[[sessions/ses_001|");
   });
+
+  it("returns undefined errors on success", async () => {
+    await kv.set("mem:memories", "mem_001", makeMemory("mem_001"));
+
+    const result = (await sdk.trigger("mem::obsidian-export", {})) as {
+      success: boolean;
+      errors?: unknown[];
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.errors).toBeUndefined();
+  });
 });
