@@ -54,7 +54,7 @@ export async function rebuildIndex(kv: StateKV): Promise<number> {
 export function registerSearchFunction(sdk: ISdk, kv: StateKV): void {
   sdk.registerFunction(
     { id: 'mem::search', description: 'Search observations by keyword' },
-    async (data: { query: string; limit?: number }) => {
+    async (data: { query: string; limit?: number; project?: string; cwd?: string }) => {
       const ctx = getContext()
       const idx = getSearchIndex()
 
@@ -63,17 +63,43 @@ export function registerSearchFunction(sdk: ISdk, kv: StateKV): void {
         ctx.logger.info('Search index rebuilt', { entries: count })
       }
 
-      const results = idx.search(data.query, data.limit || 20)
+      const limit = data.limit || 20
+      // When filtering by project/cwd, over-fetch from the index so the
+      // post-filter still has a chance of returning `limit` results.
+      const filtering = !!(data.project || data.cwd)
+      const fetchLimit = filtering ? Math.max(limit * 10, 100) : limit
+      const results = idx.search(data.query, fetchLimit)
+
+      // Resolve session -> project/cwd once per sessionId we touch.
+      const sessionCache = new Map<string, Session | null>()
+      const loadSession = async (sessionId: string): Promise<Session | null> => {
+        if (sessionCache.has(sessionId)) return sessionCache.get(sessionId)!
+        const s = await kv.get<Session>(KV.sessions, sessionId)
+        sessionCache.set(sessionId, s ?? null)
+        return s ?? null
+      }
 
       const enriched: SearchResult[] = []
       for (const r of results) {
+        if (enriched.length >= limit) break
+        if (filtering) {
+          const s = await loadSession(r.sessionId)
+          if (!s) continue
+          if (data.project && s.project !== data.project) continue
+          if (data.cwd && s.cwd !== data.cwd) continue
+        }
         const obs = await kv.get<CompressedObservation>(KV.observations(r.sessionId), r.obsId)
         if (obs) {
           enriched.push({ observation: obs, score: r.score, sessionId: r.sessionId })
         }
       }
 
-      ctx.logger.info('Search completed', { query: data.query, results: enriched.length })
+      ctx.logger.info('Search completed', {
+        query: data.query,
+        results: enriched.length,
+        project: data.project,
+        cwd: data.cwd,
+      })
       return { results: enriched }
     }
   )

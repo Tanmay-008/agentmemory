@@ -120,7 +120,7 @@ export function registerApiTriggers(
   sdk.registerFunction(
     { id: "api::search" },
     async (
-      req: ApiRequest<{ query: string; limit?: number }>,
+      req: ApiRequest<{ query: string; limit?: number; project?: string; cwd?: string }>,
     ): Promise<Response> => {
       const authErr = checkAuth(req, secret);
       if (authErr) return authErr;
