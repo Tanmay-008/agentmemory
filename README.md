@@ -32,16 +32,16 @@
 
 ---
 
-You explain the same architecture every session. You re-discover the same bugs. You re-teach the same preferences. Built-in memory (CLAUDE.md, .cursorrules) caps out at 200 lines and goes stale. agentmemory fixes this — it silently captures what your agent does, compresses it into searchable memory, and injects the right context when the next session starts. One command. Works across agents.
+You explain the same architecture every session. You re-discover the same bugs. You re-teach the same preferences. Built-in memory (CLAUDE.md, .cursorrules) caps out at 200 lines and goes stale. agentmemory fixes this. It silently captures what your agent does, compresses it into searchable memory, and injects the right context when the next session starts. One command. Works across agents.
 
-**What changes:** Session 1 you set up JWT auth. Session 2 you ask for rate limiting — the agent already knows your auth uses jose middleware in `src/middleware/auth.ts`, your tests cover token validation, and you chose jose over jsonwebtoken for Edge compatibility. No re-explaining. No copy-pasting. The agent just *knows*.
+**What changes:** Session 1 you set up JWT auth. Session 2 you ask for rate limiting. The agent already knows your auth uses jose middleware in `src/middleware/auth.ts`, your tests cover token validation, and you chose jose over jsonwebtoken for Edge compatibility. No re-explaining. No copy-pasting. The agent just *knows*.
 
 | | |
 |---|---|
 | **95.2% R@5** | [LongMemEval](https://arxiv.org/abs/2410.10813) (ICLR 2025) retrieval accuracy |
 | **92% fewer tokens** | ~1,900 injected vs ~19,000 full context ($10/yr vs $500+/yr) |
 | **43 MCP tools** | Search, remember, forget, actions, leases, signals, mesh sync |
-| **12 hooks** | Captures every tool use automatically — zero manual effort |
+| **12 hooks** | Captures every tool use automatically, zero manual effort |
 | **0 external deps** | No Postgres, no Redis, no vector DB. Just iii-engine (auto-installed) |
 
 ```bash
@@ -52,7 +52,7 @@ npx @agentmemory/agentmemory   # installs iii-engine if missing, starts everythi
 
 ## Quick Start
 
-### Claude Code (paste this — the agent does the rest)
+### Claude Code (paste this, the agent does the rest)
 
 ```
 Install agentmemory: run `npx @agentmemory/agentmemory` in a separate terminal to start the memory server. Then run `/plugin marketplace add rohitg00/agentmemory` and `/plugin install agentmemory` to register all 12 hooks, 4 skills, and 43 MCP tools. Verify with `curl http://localhost:3111/agentmemory/health`. The real-time viewer is at http://localhost:3113.
@@ -119,7 +119,7 @@ Session 2: "Now add rate limiting"
 
 ### How it compares to built-in agent memory
 
-Every AI coding agent now ships with built-in memory — Claude Code has `MEMORY.md`, Cursor has notepads, Windsurf has Cascade memories, Cline has memory bank. These work like sticky notes: fast, always-on, but fundamentally limited.
+Every AI coding agent now ships with built-in memory. Claude Code has `MEMORY.md`, Cursor has notepads, Cline has memory bank. These work like sticky notes: fast, always-on, but fundamentally limited.
 
 agentmemory is the searchable database behind the sticky notes.
 
@@ -188,7 +188,7 @@ These are retrieval recall scores (not end-to-end QA accuracy). Embedding model:
 | agentmemory BM25 (stemmed + synonyms) | 55.9% | 82.7% | 95.5% | 1,571 |
 | agentmemory + Xenova embeddings | **64.1%** | **94.9%** | **100.0%** | **1,571** |
 
-agentmemory finds "N+1 query fix" when you search "database performance optimization" — something keyword matching literally cannot do.
+agentmemory finds "N+1 query fix" when you search "database performance optimization". Keyword matching can't do this.
 
 > **Methodology note:** All LongMemEval numbers are retrieval recall (`recall_any@K`), not end-to-end QA accuracy. We clearly distinguish these because the LongMemEval leaderboard measures QA accuracy (retrieve + generate + judge). No hyperparameters were tuned on the test set. Full scripts and results are committed and reproducible.
 
@@ -252,7 +252,7 @@ npm install && npm run build && npm start
 
 ## First Steps After Install
 
-Once hooks are installed, memory builds silently. No action needed — just use your agent normally.
+Once hooks are installed, memory builds silently. No action needed. Just use your agent normally.
 
 ### Session 1: Your agent works as usual
 
@@ -416,7 +416,7 @@ agentmemory automatically cleans itself:
 | Mechanism | What it does |
 |---|---|
 | **TTL expiry** | Memories with `forgetAfter` date are deleted when expired |
-| **Contradiction detection** | Near-duplicate memories (Jaccard > 0.9) — older one is demoted |
+| **Contradiction detection** | Near-duplicate memories (Jaccard > 0.9), older one is demoted |
 | **Low-value eviction** | Observations older than 90 days with importance < 3 are removed |
 | **Per-project cap** | Projects are capped at 10,000 observations (lowest importance evicted first) |
 
