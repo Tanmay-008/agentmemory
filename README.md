@@ -667,7 +667,8 @@ agentmemory needs an LLM for compressing observations and generating summaries. 
 | Provider | Config | Notes |
 |----------|--------|-------|
 | **Claude subscription** (default) | No config needed | Uses `@anthropic-ai/claude-agent-sdk`. Zero cost beyond your Max/Pro plan |
-| **Anthropic API** | `ANTHROPIC_API_KEY` | Direct API access, per-token billing |
+| **Anthropic API** | `ANTHROPIC_API_KEY` | Direct API access, per-token billing. Supports `ANTHROPIC_BASE_URL` for custom endpoints |
+| **MiniMax** | `MINIMAX_API_KEY` | Anthropic-compatible API. Default model: `MiniMax-M2.7` |
 | **Gemini** | `GEMINI_API_KEY` | Also enables Gemini embeddings (free tier) |
 | **OpenRouter** | `OPENROUTER_API_KEY` | Access any model through one API |
 
@@ -680,6 +681,9 @@ Create `~/.agentmemory/.env`:
 ```env
 # LLM provider (pick one, or leave empty for Claude subscription)
 ANTHROPIC_API_KEY=sk-ant-...
+# ANTHROPIC_BASE_URL=https://custom-endpoint.example.com
+# MINIMAX_API_KEY=...
+# MINIMAX_MODEL=MiniMax-M2.7
 # GEMINI_API_KEY=...
 # OPENROUTER_API_KEY=...
 
@@ -694,7 +698,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 # VECTOR_WEIGHT=0.6
 
 # Provider fallback chain (comma-separated, tried in order)
-# FALLBACK_PROVIDERS=anthropic,gemini,openrouter
+# FALLBACK_PROVIDERS=anthropic,minimax,gemini,openrouter
 
 # Bearer token for API auth
 # AGENTMEMORY_SECRET=your-secret-here
@@ -757,7 +761,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 | `POST` | `/agentmemory/session/end` | Mark session complete |
 | `POST` | `/agentmemory/observe` | Capture observation |
 | `POST` | `/agentmemory/context` | Generate context |
-| `POST` | `/agentmemory/search` | Search observations (BM25) |
+| `POST` | `/agentmemory/search` | Search observations (BM25). Optional `project`/`cwd` filters |
 | `POST` | `/agentmemory/smart-search` | Hybrid search with progressive disclosure |
 | `POST` | `/agentmemory/summarize` | Generate session summary |
 | `POST` | `/agentmemory/remember` | Save to long-term memory |
