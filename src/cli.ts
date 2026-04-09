@@ -266,7 +266,7 @@ async function runStatus() {
     const h = healthRes?.health;
     const status = healthRes?.status || "unknown";
     const version = healthRes?.version || "?";
-    const sessions = Array.isArray(sessionsRes) ? sessionsRes.length : 0;
+    const sessions = Array.isArray(sessionsRes?.sessions) ? sessionsRes.sessions.length : 0;
     const memories = h?.workers?.[0]?.function_count || 0;
     const nodes = graphRes?.nodes || 0;
     const edges = graphRes?.edges || 0;

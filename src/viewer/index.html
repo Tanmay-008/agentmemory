@@ -814,16 +814,18 @@
     if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
     function isDarkMode() { return document.documentElement.dataset.theme === 'dark'; }
-    function applyTheme(dark) {
+    function applyTheme(dark, persist) {
       document.documentElement.dataset.theme = dark ? 'dark' : 'light';
       var btn = document.getElementById('theme-toggle');
       if (btn) btn.textContent = dark ? 'LIGHT' : 'DARK';
-      localStorage.setItem('agentmemory-theme', dark ? 'dark' : 'light');
+      if (persist) localStorage.setItem('agentmemory-theme', dark ? 'dark' : 'light');
     }
-    window.toggleTheme = function() { applyTheme(!isDarkMode()); };
+    window.toggleTheme = function() { applyTheme(!isDarkMode(), true); };
     var savedTheme = localStorage.getItem('agentmemory-theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      applyTheme(true);
+    if (savedTheme) {
+      applyTheme(savedTheme === 'dark', false);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      applyTheme(true, false);
     }
 
     var NODE_COLORS = {
@@ -1019,11 +1021,12 @@
         html += '<div class="sub">' + (cb.failures || 0) + ' failures</div></div>';
       }
       var totalObs = d.sessions.reduce(function(a, s) { return a + (s.observationCount || 0); }, 0);
+      var tokenBudget = parseInt(new URLSearchParams(window.location.search).get('tokenBudget') || '2000', 10) || 2000;
       var estFull = totalObs * 80;
-      var estInjected = d.sessions.length * 2000;
+      var estInjected = d.sessions.length * tokenBudget;
       var savings = estFull > 0 ? Math.round((1 - estInjected / Math.max(estFull, 1)) * 100) : 0;
       if (savings < 0) savings = 0;
-      html += '<div class="stat-card"><div class="label">Token Savings</div><div class="value">' + savings + '%</div><div class="sub">~' + estInjected.toLocaleString() + ' vs ~' + estFull.toLocaleString() + ' full</div></div>';
+      html += '<div class="stat-card"><div class="label">Token Savings</div><div class="value">' + savings + '%</div><div class="sub">~' + estInjected.toLocaleString() + ' vs ~' + estFull.toLocaleString() + ' full (budget: ' + tokenBudget + ')</div></div>';
       html += '</div>';
 
       if (snap.memory || snap.cpu) {

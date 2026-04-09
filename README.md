@@ -310,7 +310,7 @@ Once hooks are installed, memory builds silently. No action needed — just use 
 
 ### Session 1: Your agent works as usual
 
-```
+```text
 You: "Add JWT auth to the Express API"
 Agent: reads files, writes code, runs tests, fixes errors
 ```
@@ -332,7 +332,7 @@ agentmemory captures every tool use via PostToolUse hooks. At session end, 47 ra
 
 You start a new session. Before the agent responds, the SessionStart hook fires and injects context (~1,900 tokens):
 
-```
+```text
 Agent already knows:
   - Auth uses jose JWT middleware in src/middleware/auth.ts
   - Tests in test/auth.test.ts cover token validation
