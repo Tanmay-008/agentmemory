@@ -8,29 +8,41 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@agentmemory/agentmemory"><img src="https://img.shields.io/npm/v/@agentmemory/agentmemory?color=CB3837&label=npm" alt="npm version" /></a>
+  <a href="https://github.com/rohitg00/agentmemory/actions"><img src="https://img.shields.io/github/actions/workflow/status/rohitg00/agentmemory/ci.yml?label=tests" alt="CI" /></a>
+  <a href="https://github.com/rohitg00/agentmemory/blob/main/LICENSE"><img src="https://img.shields.io/github/license/rohitg00/agentmemory?color=blue" alt="License" /></a>
+  <a href="https://github.com/rohitg00/agentmemory/stargazers"><img src="https://img.shields.io/github/stars/rohitg00/agentmemory?style=flat&color=yellow" alt="Stars" /></a>
+</p>
+
+<p align="center">
   <img src="assets/demo.gif" alt="agentmemory demo" width="720" />
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> &bull;
   <a href="#why-agentmemory">Why</a> &bull;
-  <a href="#supported-agents">Agents</a> &bull;
+  <a href="#benchmarks-measured-not-projected">Benchmarks</a> &bull;
   <a href="#how-it-works">How It Works</a> &bull;
   <a href="#search">Search</a> &bull;
-  <a href="#memory-evolution">Memory Evolution</a> &bull;
   <a href="#mcp-server">MCP</a> &bull;
   <a href="#real-time-viewer">Viewer</a> &bull;
-  <a href="#configuration">Configuration</a> &bull;
+  <a href="#configuration">Config</a> &bull;
   <a href="#api">API</a>
 </p>
 
 ---
 
-You explain the same architecture every session. You re-discover the same bugs. You re-teach the same preferences. Built-in memory (CLAUDE.md, .cursorrules) caps out at 200 lines and goes stale. agentmemory fixes this — it silently captures what your agent does, compresses it into searchable memory, and injects the right context when the next session starts. One command. Works across agents.
+You explain the same architecture every session. You re-discover the same bugs. You re-teach the same preferences. Built-in memory (CLAUDE.md, .cursorrules) caps out at 200 lines and goes stale. agentmemory fixes this. It silently captures what your agent does, compresses it into searchable memory, and injects the right context when the next session starts. One command. Works across agents.
 
-**What changes:** Session 1 you set up JWT auth. Session 2 you ask for rate limiting — the agent already knows your auth uses jose middleware in `src/middleware/auth.ts`, your tests cover token validation, and you chose jose over jsonwebtoken for Edge compatibility. No re-explaining. No copy-pasting. The agent just *knows*.
+**What changes:** Session 1 you set up JWT auth. Session 2 you ask for rate limiting. The agent already knows your auth uses jose middleware in `src/middleware/auth.ts`, your tests cover token validation, and you chose jose over jsonwebtoken for Edge compatibility. No re-explaining. No copy-pasting. The agent just *knows*.
 
-**95.2% retrieval accuracy** on [LongMemEval](https://arxiv.org/abs/2410.10813) (ICLR 2025). 43 MCP tools. 12 hooks. Real-time viewer. Works with Claude Code, Cursor, Gemini CLI, OpenCode, and any MCP client. 646 tests. Zero external DB dependencies.
+| | |
+|---|---|
+| **95.2% R@5** | [LongMemEval](https://arxiv.org/abs/2410.10813) (ICLR 2025) retrieval accuracy |
+| **92% fewer tokens** | ~1,900 injected vs ~19,000 full context ($10/yr vs $500+/yr) |
+| **43 MCP tools** | Search, remember, forget, actions, leases, signals, mesh sync |
+| **12 hooks** | Captures every tool use automatically, zero manual effort |
+| **0 external deps** | No Postgres, no Redis, no vector DB. Just iii-engine (auto-installed) |
 
 ```bash
 npx @agentmemory/agentmemory   # installs iii-engine if missing, starts everything
@@ -40,7 +52,7 @@ npx @agentmemory/agentmemory   # installs iii-engine if missing, starts everythi
 
 ## Quick Start
 
-### Claude Code (paste this — the agent does the rest)
+### Claude Code (paste this, the agent does the rest)
 
 ```
 Install agentmemory: run `npx @agentmemory/agentmemory` in a separate terminal to start the memory server. Then run `/plugin marketplace add rohitg00/agentmemory` and `/plugin install agentmemory` to register all 12 hooks, 4 skills, and 43 MCP tools. Verify with `curl http://localhost:3111/agentmemory/health`. The real-time viewer is at http://localhost:3113.
@@ -107,7 +119,7 @@ Session 2: "Now add rate limiting"
 
 ### How it compares to built-in agent memory
 
-Every AI coding agent now ships with built-in memory — Claude Code has `MEMORY.md`, Cursor has notepads, Windsurf has Cascade memories, Cline has memory bank. These work like sticky notes: fast, always-on, but fundamentally limited.
+Every AI coding agent now ships with built-in memory. Claude Code has `MEMORY.md`, Cursor has notepads, Cline has memory bank. These work like sticky notes: fast, always-on, but fundamentally limited.
 
 agentmemory is the searchable database behind the sticky notes.
 
@@ -127,6 +139,33 @@ agentmemory is the searchable database behind the sticky notes.
 | Memory lifecycle | Manual pruning | Ebbinghaus decay + tiered eviction |
 | Knowledge graph | No | Entity extraction + temporal versioning |
 | Observability | Read files manually | Real-time viewer on :3113 |
+
+### What it costs (spoiler: almost nothing)
+
+| Approach | Tokens/year | Annual cost | Notes |
+|---|---|---|---|
+| Paste full history into context | 19.5M+ | Impossible | Exceeds context window after ~200 observations |
+| LLM-summarized memory (extraction-based) | ~650K | ~$500/yr | Loses context, summarization is lossy |
+| **agentmemory context injection** | **~170K** | **~$10/yr** | Token-budgeted, only relevant memories injected |
+| agentmemory with local embeddings | ~170K | **$0** | all-MiniLM-L6-v2 runs locally, no API calls |
+
+### How memory flows
+
+```text
+PostToolUse hook fires
+  -> SHA-256 dedup (5min window)
+  -> Privacy filter (strip secrets, API keys)
+  -> Store raw observation
+  -> LLM compress -> structured facts + concepts + narrative
+  -> Generate vector embedding
+  -> Index in BM25 + vector + knowledge graph
+
+SessionStart hook fires
+  -> Load project profile (top concepts, files, patterns)
+  -> Hybrid search (BM25 + vector + graph) for recent context
+  -> Apply token budget (default: 2000 tokens)
+  -> Inject into conversation via stdout
+```
 
 ### Benchmarks (measured, not projected)
 
@@ -149,7 +188,9 @@ These are retrieval recall scores (not end-to-end QA accuracy). Embedding model:
 | agentmemory BM25 (stemmed + synonyms) | 55.9% | 82.7% | 95.5% | 1,571 |
 | agentmemory + Xenova embeddings | **64.1%** | **94.9%** | **100.0%** | **1,571** |
 
-agentmemory finds "N+1 query fix" when you search "database performance optimization" — something keyword matching literally cannot do.
+agentmemory finds "N+1 query fix" when you search "database performance optimization". Keyword matching can't do this.
+
+> **Methodology note:** All LongMemEval numbers are retrieval recall (`recall_any@K`), not end-to-end QA accuracy. We clearly distinguish these because the LongMemEval leaderboard measures QA accuracy (retrieve + generate + judge). No hyperparameters were tuned on the test set. Full scripts and results are committed and reproducible.
 
 Full benchmark reports: [`benchmark/LONGMEMEVAL.md`](benchmark/LONGMEMEVAL.md), [`benchmark/QUALITY.md`](benchmark/QUALITY.md), [`benchmark/SCALE.md`](benchmark/SCALE.md), [`benchmark/REAL-EMBEDDINGS.md`](benchmark/REAL-EMBEDDINGS.md)
 
@@ -211,7 +252,7 @@ npm install && npm run build && npm start
 
 ## First Steps After Install
 
-Once hooks are installed, memory builds silently. No action needed — just use your agent normally.
+Once hooks are installed, memory builds silently. No action needed. Just use your agent normally.
 
 ### Session 1: Your agent works as usual
 
@@ -375,7 +416,7 @@ agentmemory automatically cleans itself:
 | Mechanism | What it does |
 |---|---|
 | **TTL expiry** | Memories with `forgetAfter` date are deleted when expired |
-| **Contradiction detection** | Near-duplicate memories (Jaccard > 0.9) — older one is demoted |
+| **Contradiction detection** | Near-duplicate memories (Jaccard > 0.9), older one is demoted |
 | **Low-value eviction** | Observations older than 90 days with importance < 3 are removed |
 | **Per-project cap** | Projects are capped at 10,000 observations (lowest importance evicted first) |
 
