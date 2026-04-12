@@ -8,10 +8,19 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@agentmemory/agentmemory"><img src="https://img.shields.io/npm/v/@agentmemory/agentmemory?color=CB3837&label=npm" alt="npm version" /></a>
-  <a href="https://github.com/rohitg00/agentmemory/actions"><img src="https://img.shields.io/github/actions/workflow/status/rohitg00/agentmemory/ci.yml?label=tests" alt="CI" /></a>
-  <a href="https://github.com/rohitg00/agentmemory/blob/main/LICENSE"><img src="https://img.shields.io/github/license/rohitg00/agentmemory?color=blue" alt="License" /></a>
-  <a href="https://github.com/rohitg00/agentmemory/stargazers"><img src="https://img.shields.io/github/stars/rohitg00/agentmemory?style=flat&color=yellow" alt="Stars" /></a>
+  <a href="https://www.npmjs.com/package/@agentmemory/agentmemory"><img src="https://img.shields.io/npm/v/@agentmemory/agentmemory?color=CB3837&label=npm&style=for-the-badge&logo=npm" alt="npm version" /></a>
+  <a href="https://github.com/rohitg00/agentmemory/actions"><img src="https://img.shields.io/github/actions/workflow/status/rohitg00/agentmemory/ci.yml?label=tests&style=for-the-badge&logo=github" alt="CI" /></a>
+  <a href="https://github.com/rohitg00/agentmemory/blob/main/LICENSE"><img src="https://img.shields.io/github/license/rohitg00/agentmemory?color=blue&style=for-the-badge" alt="License" /></a>
+  <a href="https://github.com/rohitg00/agentmemory/stargazers"><img src="https://img.shields.io/github/stars/rohitg00/agentmemory?style=for-the-badge&color=yellow&logo=github" alt="Stars" /></a>
+</p>
+
+<p align="center">
+  <img src="assets/tags/stat-recall.svg" alt="95.2% retrieval R@5" height="48" />
+  <img src="assets/tags/stat-tokens.svg" alt="92% fewer tokens" height="48" />
+  <img src="assets/tags/stat-tools.svg" alt="43 MCP tools" height="48" />
+  <img src="assets/tags/stat-hooks.svg" alt="12 auto hooks" height="48" />
+  <img src="assets/tags/stat-deps.svg" alt="0 external DBs" height="48" />
+  <img src="assets/tags/stat-tests.svg" alt="654 tests passing" height="48" />
 </p>
 
 <p align="center">
@@ -22,12 +31,109 @@
   <a href="#quick-start">Quick Start</a> &bull;
   <a href="#benchmarks">Benchmarks</a> &bull;
   <a href="#vs-competitors">vs Competitors</a> &bull;
-  <a href="#supported-agents">Agents</a> &bull;
+  <a href="#works-with-every-agent">Agents</a> &bull;
   <a href="#how-it-works">How It Works</a> &bull;
   <a href="#mcp-server">MCP</a> &bull;
   <a href="#real-time-viewer">Viewer</a> &bull;
   <a href="#configuration">Config</a> &bull;
   <a href="#api">API</a>
+</p>
+
+---
+
+<h2 id="works-with-every-agent"><img src="assets/tags/section-agents.svg" alt="Works with every agent" height="32" /></h2>
+
+agentmemory works with any agent that supports hooks, MCP, or REST API. All agents share the same memory server.
+
+<table>
+<tr>
+<td align="center" width="12.5%">
+<a href="https://claude.com/product/claude-code"><img src="https://matthiasroder.com/content/images/2026/01/Claude.png?size=120" alt="Claude Code" width="48" height="48" /></a><br/>
+<strong>Claude Code</strong><br/>
+<sub>12 hooks + MCP + skills</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="integrations/openclaw/"><img src="https://github.com/openclaw.png?size=120" alt="OpenClaw" width="48" height="48" /></a><br/>
+<strong>OpenClaw</strong><br/>
+<sub>MCP + <a href="integrations/openclaw/">plugin</a></sub>
+</td>
+<td align="center" width="12.5%">
+<a href="integrations/hermes/"><img src="https://github.com/NousResearch.png?size=120" alt="Hermes" width="48" height="48" /></a><br/>
+<strong>Hermes</strong><br/>
+<sub>MCP + <a href="integrations/hermes/">plugin</a></sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://cursor.com"><img src="https://www.freelogovectors.net/wp-content/uploads/2025/06/cursor-logo-freelogovectors.net_.png" alt="Cursor" width="48" height="48" /></a><br/>
+<strong>Cursor</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://github.com/google-gemini/gemini-cli"><img src="https://github.com/google-gemini.png?size=120" alt="Gemini CLI" width="48" height="48" /></a><br/>
+<strong>Gemini CLI</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://github.com/opencode-ai/opencode"><img src="https://github.com/opencode-ai.png?size=120" alt="OpenCode" width="48" height="48" /></a><br/>
+<strong>OpenCode</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://github.com/openai/codex"><img src="https://github.com/openai.png?size=120" alt="Codex CLI" width="48" height="48" /></a><br/>
+<strong>Codex CLI</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://github.com/cline/cline"><img src="https://github.com/cline.png?size=120" alt="Cline" width="48" height="48" /></a><br/>
+<strong>Cline</strong><br/>
+<sub>MCP server</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="12.5%">
+<a href="https://github.com/block/goose"><img src="https://github.com/block.png?size=120" alt="Goose" width="48" height="48" /></a><br/>
+<strong>Goose</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://github.com/Kilo-Org/kilocode"><img src="https://github.com/Kilo-Org.png?size=120" alt="Kilo Code" width="48" height="48" /></a><br/>
+<strong>Kilo Code</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://github.com/Aider-AI/aider"><img src="https://github.com/Aider-AI.png?size=120" alt="Aider" width="48" height="48" /></a><br/>
+<strong>Aider</strong><br/>
+<sub>REST API</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://claude.ai/download"><img src="https://github.com/anthropics.png?size=120" alt="Claude Desktop" width="48" height="48" /></a><br/>
+<strong>Claude Desktop</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://windsurf.com"><img src="https://exafunction.github.io/public/brand/windsurf-black-symbol.svg?size=120" alt="Windsurf" width="48" height="48" /></a><br/>
+<strong>Windsurf</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://github.com/RooCodeInc/Roo-Code"><img src="https://github.com/RooCodeInc.png?size=120" alt="Roo Code" width="48" height="48" /></a><br/>
+<strong>Roo Code</strong><br/>
+<sub>MCP server</sub>
+</td>
+<td align="center" width="12.5%">
+<a href="https://github.com/anthropics/claude-agent-sdk-typescript"><img src="https://github.com/anthropics.png?size=120" alt="Claude SDK" width="48" height="48" /></a><br/>
+<strong>Claude SDK</strong><br/>
+<sub>AgentSDKProvider</sub>
+</td>
+<td align="center" width="12.5%">
+<img src="https://img.shields.io/badge/109-endpoints-1f6feb?style=flat-square" alt="REST API" width="48" /><br/>
+<strong>Any agent</strong><br/>
+<sub>REST API</sub>
+</td>
+</tr>
+</table>
+
+<p align="center">
+  <sub>Works with <strong>any</strong> agent that speaks MCP or HTTP. One server, memories shared across all of them.</sub>
 </p>
 
 ---
@@ -40,9 +146,11 @@ You explain the same architecture every session. You re-discover the same bugs. 
 npx @agentmemory/agentmemory
 ```
 
+> **New in v0.8.2** — Security hardening (default localhost, viewer CSP nonces, mesh auth), `agentmemory demo` command, benchmark comparison vs mem0/Letta/Khoj, OpenClaw gateway plugin, real-time token savings in CLI + viewer.
+
 ---
 
-## Benchmarks
+<h2 id="benchmarks"><img src="assets/tags/section-benchmarks.svg" alt="Benchmarks" height="32" /></h2>
 
 <table>
 <tr>
@@ -73,22 +181,20 @@ npx @agentmemory/agentmemory
 </tr>
 </table>
 
-<table>
-<tr>
-<td align="center"><strong>95.2%</strong><br/>Retrieval R@5</td>
-<td align="center"><strong>92% fewer</strong><br/>tokens vs full context</td>
-<td align="center"><strong>43</strong><br/>MCP tools</td>
-<td align="center"><strong>12</strong><br/>auto-capture hooks</td>
-<td align="center"><strong>0</strong><br/>external DB deps</td>
-<td align="center"><strong>646</strong><br/>tests passing</td>
-</tr>
-</table>
+<p align="center">
+  <img src="assets/tags/stat-recall.svg" alt="95.2% retrieval R@5" height="48" />
+  <img src="assets/tags/stat-tokens.svg" alt="92% fewer tokens" height="48" />
+  <img src="assets/tags/stat-tools.svg" alt="43 MCP tools" height="48" />
+  <img src="assets/tags/stat-hooks.svg" alt="12 auto hooks" height="48" />
+  <img src="assets/tags/stat-deps.svg" alt="0 external DBs" height="48" />
+  <img src="assets/tags/stat-tests.svg" alt="654 tests passing" height="48" />
+</p>
 
 > Embedding model: `all-MiniLM-L6-v2` (local, free, no API key). Full reports: [`benchmark/LONGMEMEVAL.md`](benchmark/LONGMEMEVAL.md), [`benchmark/QUALITY.md`](benchmark/QUALITY.md), [`benchmark/SCALE.md`](benchmark/SCALE.md). Competitor comparison: [`benchmark/COMPARISON.md`](benchmark/COMPARISON.md) — agentmemory vs mem0, Letta, Khoj, claude-mem, Hippo.
 
 ---
 
-## vs Competitors
+<h2 id="vs-competitors"><img src="assets/tags/section-competitors.svg" alt="vs Competitors" height="32" /></h2>
 
 <table>
 <tr>
@@ -179,36 +285,7 @@ npx @agentmemory/agentmemory
 
 ---
 
-## Supported Agents
-
-agentmemory works with any agent that supports hooks, MCP, or REST API. All agents share the same memory server.
-
-<table>
-<tr>
-<td align="center" width="12.5%"><strong>Claude Code</strong><br/><sub>12 hooks + MCP + skills</sub></td>
-<td align="center" width="12.5%"><strong>Cursor</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>OpenClaw</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Gemini CLI</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>OpenCode</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Codex CLI</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Cline</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Hermes</strong><br/><sub>MCP + plugin</sub></td>
-</tr>
-<tr>
-<td align="center" width="12.5%"><strong>Goose</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Kilo Code</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Aider</strong><br/><sub>REST API</sub></td>
-<td align="center" width="12.5%"><strong>Claude Desktop</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Windsurf</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Roo Code</strong><br/><sub>MCP server</sub></td>
-<td align="center" width="12.5%"><strong>Claude SDK</strong><br/><sub>AgentSDKProvider</sub></td>
-<td align="center" width="12.5%"><strong>Any agent</strong><br/><sub>REST API (109 endpoints)</sub></td>
-</tr>
-</table>
-
----
-
-## Quick Start
+<h2 id="quick-start"><img src="assets/tags/section-quickstart.svg" alt="Quick Start" height="32" /></h2>
 
 ### Try it in 30 seconds
 
@@ -229,6 +306,46 @@ Open `http://localhost:3113` to watch the memory build live.
 ```
 Install agentmemory: run `npx @agentmemory/agentmemory` in a separate terminal to start the memory server. Then run `/plugin marketplace add rohitg00/agentmemory` and `/plugin install agentmemory` to register all 12 hooks, 4 skills, and 43 MCP tools. Verify with `curl http://localhost:3111/agentmemory/health`. The real-time viewer is at http://localhost:3113.
 ```
+
+<details>
+<summary><b>OpenClaw (paste this prompt)</b></summary>
+
+```
+Install agentmemory for OpenClaw. Run `npx @agentmemory/agentmemory` in a separate terminal to start the memory server on localhost:3111. Then add this to my OpenClaw MCP config so agentmemory is available with all 43 memory tools:
+
+{
+  "mcpServers": {
+    "agentmemory": {
+      "command": "npx",
+      "args": ["agentmemory-mcp"]
+    }
+  }
+}
+
+Restart OpenClaw. Verify with `curl http://localhost:3111/agentmemory/health`. Open http://localhost:3113 for the real-time viewer. For deeper 4-hook gateway integration, see integrations/openclaw in the agentmemory repo.
+```
+
+Full guide: [`integrations/openclaw/`](integrations/openclaw/)
+
+</details>
+
+<details>
+<summary><b>Hermes Agent (paste this prompt)</b></summary>
+
+```
+Install agentmemory for Hermes. Run `npx @agentmemory/agentmemory` in a separate terminal to start the memory server on localhost:3111. Then add this to ~/.hermes/config.yaml so Hermes can use agentmemory as an MCP server with all 43 memory tools:
+
+mcp_servers:
+  agentmemory:
+    command: npx
+    args: ["agentmemory-mcp"]
+
+Verify with `curl http://localhost:3111/agentmemory/health`. Open http://localhost:3113 for the real-time viewer. For deeper 6-hook memory provider integration (pre-LLM context injection, turn capture, MEMORY.md mirroring, system prompt block), copy integrations/hermes from the agentmemory repo to ~/.hermes/plugins/memory/agentmemory.
+```
+
+Full guide: [`integrations/hermes/`](integrations/hermes/)
+
+</details>
 
 ### Other agents
 
@@ -262,7 +379,7 @@ Install `iii-engine` manually with `cargo install iii-engine` or follow [iii.dev
 
 ---
 
-## Why agentmemory
+<h2 id="why-agentmemory"><img src="assets/tags/section-why.svg" alt="Why agentmemory" height="32" /></h2>
 
 Every coding agent forgets everything when the session ends. You waste the first 5 minutes of every session re-explaining your stack. agentmemory runs in the background and eliminates that entirely.
 
@@ -295,7 +412,7 @@ Every AI coding agent ships with built-in memory — Claude Code has `MEMORY.md`
 
 ---
 
-## How It Works
+<h2 id="how-it-works"><img src="assets/tags/section-how.svg" alt="How It Works" height="32" /></h2>
 
 ### Memory Pipeline
 
@@ -360,7 +477,7 @@ Memories decay over time (Ebbinghaus curve). Frequently accessed memories streng
 
 ---
 
-## Search
+<h2 id="search"><img src="assets/tags/section-search.svg" alt="Search" height="32" /></h2>
 
 Triple-stream retrieval combining three signals:
 
@@ -391,7 +508,7 @@ npm install @xenova/transformers
 
 ---
 
-## MCP Server
+<h2 id="mcp-server"><img src="assets/tags/section-mcp.svg" alt="MCP Server" height="32" /></h2>
 
 43 tools, 6 resources, 3 prompts, and 4 skills — the most comprehensive MCP memory toolkit for any agent.
 
@@ -490,7 +607,7 @@ Or add to your agent's MCP config:
 
 ---
 
-## Real-Time Viewer
+<h2 id="real-time-viewer"><img src="assets/tags/section-viewer.svg" alt="Real-Time Viewer" height="32" /></h2>
 
 Auto-starts on port `3113`. Live observation stream, session explorer, memory browser, knowledge graph visualization, and health dashboard.
 
@@ -502,7 +619,7 @@ The viewer server binds to `127.0.0.1` by default. The REST-served `/agentmemory
 
 ---
 
-## Configuration
+<h2 id="configuration"><img src="assets/tags/section-config.svg" alt="Configuration" height="32" /></h2>
 
 ### LLM Providers
 
@@ -561,7 +678,7 @@ Create `~/.agentmemory/.env`:
 
 ---
 
-## API
+<h2 id="api"><img src="assets/tags/section-api.svg" alt="API" height="32" /></h2>
 
 109 endpoints on port `3111`. The REST API binds to `127.0.0.1` by default. Protected endpoints require `Authorization: Bearer <secret>` when `AGENTMEMORY_SECRET` is set, and mesh sync endpoints require `AGENTMEMORY_SECRET` on both peers.
 
@@ -592,7 +709,7 @@ Full endpoint list: [`src/triggers/api.ts`](src/triggers/api.ts)
 
 ---
 
-## Architecture
+<h2 id="architecture"><img src="assets/tags/section-architecture.svg" alt="Architecture" height="32" /></h2>
 
 Built on [iii-engine](https://iii.dev)'s three primitives — no Express, no Postgres, no Redis.
 
@@ -611,7 +728,7 @@ Built on [iii-engine](https://iii.dev)'s three primitives — no Express, no Pos
 
 </details>
 
-## Development
+<h2 id="development"><img src="assets/tags/section-development.svg" alt="Development" height="32" /></h2>
 
 ```bash
 npm run dev               # Hot reload
@@ -622,6 +739,6 @@ npm run test:integration  # API tests (requires running services)
 
 **Prerequisites:** Node.js >= 20, [iii-engine](https://iii.dev/docs) or Docker
 
-## License
+<h2 id="license"><img src="assets/tags/section-license.svg" alt="License" height="32" /></h2>
 
 [Apache-2.0](LICENSE)
