@@ -377,6 +377,47 @@ This starts agentmemory with a local `iii-engine` if `iii` is already installed,
 
 Install `iii-engine` manually with `cargo install iii-engine` or follow [iii.dev docs](https://iii.dev/docs).
 
+### Windows
+
+agentmemory runs on Windows 10/11, but the Node.js package alone isn't enough — you also need the `iii-engine` runtime (a separate Rust binary) as a background process. Pick one of:
+
+**Option A — Rust toolchain (recommended):**
+
+```powershell
+# 1. Install rustup: https://rustup.rs/
+# 2. Restart your shell so cargo is on PATH
+cargo install iii-engine
+
+# 3. Then run agentmemory as usual:
+npx -y @agentmemory/agentmemory
+```
+
+**Option B — Docker Desktop:**
+
+```powershell
+# 1. Install Docker Desktop for Windows
+# 2. Start Docker Desktop and make sure it says "Engine running"
+# 3. Run agentmemory — it will auto-start the bundled compose file:
+npx -y @agentmemory/agentmemory
+```
+
+**Option C — standalone MCP only (no engine):** if you only need the MCP tools for your agent and don't need the REST API / viewer / cron jobs, skip the engine entirely:
+
+```powershell
+npx -y @agentmemory/agentmemory mcp
+# or via the shim package:
+npx -y agentmemory-mcp
+```
+
+**Diagnostics for Windows:** if `npx @agentmemory/agentmemory` fails, re-run with `--verbose` to see the actual engine stderr. Common failure modes:
+
+| Symptom | Fix |
+|---|---|
+| `iii-engine process started` then `did not become ready within 15s` | Engine crashed on startup — re-run with `--verbose`, check stderr |
+| `Could not start iii-engine` | Neither `iii.exe` nor Docker is installed. See Option A or B above |
+| Port conflict | `netstat -ano \| findstr :3111` to see what's bound, then kill it or use `--port <N>` |
+| Docker fallback skipped even though Docker is installed | Make sure Docker Desktop is actually running (system tray icon) |
+
 ---
 
 <h2 id="why-agentmemory"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/tags/light/section-why.svg"><img src="assets/tags/section-why.svg" alt="Why agentmemory" height="32" /></picture></h2>
