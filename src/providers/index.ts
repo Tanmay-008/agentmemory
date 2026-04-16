@@ -73,7 +73,7 @@ function createBaseProvider(config: ProviderConfig): MemoryProvider {
       );
     case "gemini": {
       const geminiKey =
-        getEnvVar("GEMINI_API_KEY") ?? getEnvVar("GOOGLE_API_KEY");
+        getEnvVar("GEMINI_API_KEY") || getEnvVar("GOOGLE_API_KEY");
       if (!geminiKey) {
         throw new Error(
           "GEMINI_API_KEY (or GOOGLE_API_KEY) is required for the gemini provider",
