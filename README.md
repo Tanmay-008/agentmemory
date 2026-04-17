@@ -723,6 +723,12 @@ The viewer server binds to `127.0.0.1` by default. The REST-served `/agentmemory
 
 agentmemory runs on the [iii engine](https://iii.dev), so the official [iii console](https://iii.dev/docs/console) gives you OpenTelemetry traces, the raw key/value state store, the stream monitor, and a direct function invoker for every piece of memory machinery. Use it to watch a `memory.search` call hit BM25 → embeddings → reranker in real time, replay a hook invocation, or poke individual functions without going through MCP.
 
+<p align="center">
+  <img src="assets/iii-console/dashboard.png" alt="iii console dashboard — system counters, application flow, registered triggers, live WebSocket status" width="720" />
+  <br/>
+  <em>Dashboard: functions, triggers, workers, streams, live flow graph. Screenshot from <a href="https://iii.dev/docs/console">iii.dev/docs/console</a>.</em>
+</p>
+
 **Install once:**
 
 ```bash
@@ -748,6 +754,12 @@ Then open `http://localhost:3114`.
 | **Streams** | Watch live memory writes, hook events, and observation updates as they flow through iii's WebSocket stream. |
 | **Traces** | OpenTelemetry waterfall / flame / service-breakdown views. Filter by `trace_id` to see exactly which functions, DB calls, and embedding requests a single `memory.search` produced. |
 | **Logs** | Structured OTEL logs correlated to trace/span IDs. |
+
+<p align="center">
+  <img src="assets/iii-console/traces-waterfall.png" alt="iii console trace waterfall view showing per-span duration" width="720" />
+  <br/>
+  <em>Traces: waterfall / flame / service breakdown for every memory operation.</em>
+</p>
 
 **Traces are already on:**
 
