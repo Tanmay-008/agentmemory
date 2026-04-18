@@ -40,7 +40,7 @@ describe("FilesystemWatcher", () => {
     } catch {}
   });
 
-  it("emits a file_change observation when a watched file is written", async () => {
+  it("emits a post_tool_use observation with HookPayload shape on write", async () => {
     const w = new FilesystemWatcher({
       roots: [root],
       baseUrl: "http://localhost:3111",
@@ -53,16 +53,31 @@ describe("FilesystemWatcher", () => {
       expect(captured.length).toBeGreaterThanOrEqual(1);
       const obs = captured[captured.length - 1];
       expect(obs.url).toBe("http://localhost:3111/agentmemory/observe");
-      const body = obs.body as { hookType: string; files: string[]; content: string };
-      expect(body.hookType).toBe("file_change");
-      expect(body.files).toContain("notes.md");
-      expect(body.content).toContain("hello world");
+      const body = obs.body as {
+        hookType: string;
+        sessionId: string;
+        project: string;
+        cwd: string;
+        timestamp: string;
+        data: { changeKind: string; files: string[]; content: string; source: string };
+      };
+      expect(body.hookType).toBe("post_tool_use");
+      expect(typeof body.sessionId).toBe("string");
+      expect(body.sessionId.length).toBeGreaterThan(0);
+      expect(typeof body.project).toBe("string");
+      expect(body.project.length).toBeGreaterThan(0);
+      expect(body.cwd).toBe(root);
+      expect(body.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(body.data.source).toBe("filesystem-watcher");
+      expect(body.data.changeKind).toBe("file_change");
+      expect(body.data.files).toContain("notes.md");
+      expect(body.data.content).toContain("hello world");
     } finally {
       w.stop();
     }
   });
 
-  it("emits a file_delete observation when a watched file is removed", async () => {
+  it("emits changeKind=file_delete when a watched file is removed", async () => {
     writeFileSync(join(root, "old.md"), "bye\n");
     const w = new FilesystemWatcher({
       roots: [root],
@@ -74,12 +89,21 @@ describe("FilesystemWatcher", () => {
       unlinkSync(join(root, "old.md"));
       await wait(800);
       const deletes = captured.filter(
-        (c) => (c.body as { hookType: string }).hookType === "file_delete",
+        (c) => (c.body as { data: { changeKind: string } }).data?.changeKind === "file_delete",
       );
       expect(deletes.length).toBeGreaterThanOrEqual(1);
     } finally {
       w.stop();
     }
+  });
+
+  it("throws if no watched roots could be attached", () => {
+    const w = new FilesystemWatcher({
+      roots: ["/definitely/does/not/exist/xyz123"],
+      baseUrl: "http://localhost:3111",
+      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    });
+    expect(() => w.start()).toThrow(/could not watch any of the configured roots/);
   });
 
   it("ignores paths that match the default ignore set", async () => {
@@ -94,7 +118,7 @@ describe("FilesystemWatcher", () => {
       writeFileSync(join(root, "node_modules", "ignored.js"), "x");
       await wait(800);
       const matches = captured.filter((c) =>
-        (c.body as { files: string[] }).files?.some((f) => f.includes("ignored.js")),
+        (c.body as { data: { files: string[] } }).data?.files?.some((f) => f.includes("ignored.js")),
       );
       expect(matches).toHaveLength(0);
     } finally {
@@ -136,7 +160,7 @@ describe("FilesystemWatcher", () => {
       writeFileSync(target, "4\n");
       await wait(900);
       const hits = captured.filter((c) =>
-        (c.body as { files: string[] }).files?.[0] === "burst.md",
+        (c.body as { data: { files: string[] } }).data?.files?.[0] === "burst.md",
       );
       expect(hits.length).toBeLessThanOrEqual(2);
     } finally {

@@ -1,5 +1,6 @@
 import { watch, promises as fsp, statSync } from "node:fs";
-import { resolve, relative, join, extname, sep } from "node:path";
+import { resolve, relative, join, extname, sep, basename } from "node:path";
+import { randomBytes } from "node:crypto";
 
 const TEXT_EXTENSIONS = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
@@ -33,8 +34,12 @@ export class FilesystemWatcher {
     this.roots = (config.roots || []).map((r) => resolve(r));
     this.baseUrl = (config.baseUrl || "http://localhost:3111").replace(/\/+$/, "");
     this.secret = config.secret;
-    this.project = config.project || null;
-    this.sessionId = config.sessionId || null;
+    this.project =
+      config.project ||
+      (this.roots[0] ? basename(this.roots[0]) : "filesystem-watcher");
+    this.sessionId =
+      config.sessionId ||
+      `fs-watcher-${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`;
     this.ignore = [...DEFAULT_IGNORE, ...(config.ignorePatterns || [])];
     this.allowBinary = Boolean(config.allowBinary);
     this.logger = config.logger || console;
@@ -112,20 +117,26 @@ export class FilesystemWatcher {
     } catch {
       exists = false;
     }
-    const hookType = exists ? "file_change" : "file_delete";
+    const changeKind = exists ? "file_change" : "file_delete";
     let preview = null;
     if (exists && this.isTextFile(absPath)) {
       preview = await this.readPreview(absPath);
     }
     const truncated = exists && size > MAX_PREVIEW_BYTES;
     const payload = {
-      hookType,
-      project: this.project,
+      hookType: "post_tool_use",
       sessionId: this.sessionId,
-      files: [relPath],
-      content: this.formatContent(relPath, hookType, preview, { size, truncated }),
-      metadata: {
+      project: this.project,
+      cwd: rootDir,
+      timestamp: new Date().toISOString(),
+      data: {
         source: "filesystem-watcher",
+        changeKind,
+        files: [relPath],
+        content: this.formatContent(relPath, changeKind, preview, {
+          size,
+          truncated,
+        }),
         rootDir,
         absPath,
         size,
@@ -135,8 +146,8 @@ export class FilesystemWatcher {
     await this.emit(payload);
   }
 
-  formatContent(relPath, hookType, preview, { size, truncated }) {
-    if (hookType === "file_delete") return `deleted: ${relPath}`;
+  formatContent(relPath, changeKind, preview, { size, truncated }) {
+    if (changeKind === "file_delete") return `deleted: ${relPath}`;
     const head = `${relPath} (${size} bytes${truncated ? ", truncated" : ""})`;
     if (preview === null) return head;
     return `${head}\n\n${preview}`;
@@ -146,6 +157,7 @@ export class FilesystemWatcher {
     if (this.roots.length === 0) {
       throw new Error("filesystem-watcher: at least one root directory is required");
     }
+    const failures = [];
     for (const root of this.roots) {
       try {
         const handle = watch(
@@ -164,10 +176,17 @@ export class FilesystemWatcher {
         this.watchers.push(handle);
         this.logger.info?.(`[fs-watcher] watching ${root}`);
       } catch (err) {
-        this.logger.error?.(
-          `[fs-watcher] failed to watch ${root}: ${err?.message || err}`,
-        );
+        const msg = err?.message || String(err);
+        failures.push(`${root}: ${msg}`);
+        this.logger.error?.(`[fs-watcher] failed to watch ${root}: ${msg}`);
       }
+    }
+    if (this.watchers.length === 0) {
+      throw new Error(
+        `filesystem-watcher: could not watch any of the configured roots. ` +
+          `If you are on Node 18 + Linux, recursive fs.watch requires Node >=19.1.0; upgrade to Node 20 LTS or newer. ` +
+          `Failures: ${failures.join("; ")}`,
+      );
     }
   }
 

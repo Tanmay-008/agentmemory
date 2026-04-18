@@ -29,7 +29,11 @@ export AGENTMEMORY_SECRET=...   # only if the server requires auth
 agentmemory-fs-watcher
 ```
 
-Every file change inside the watched roots becomes a `file_change` observation; deletions become `file_delete`. The first 4 KB of each text file is included as content preview so retrieval can match by substring; larger files are truncated with `truncated: true` in metadata. Binary files are not read (set `AGENTMEMORY_FS_WATCH_ALLOW_BINARY=1` to override).
+Every file change inside the watched roots becomes a `post_tool_use` observation whose `data.changeKind` is `file_change` or `file_delete`. The first 4 KB of each text file is included as `data.content` so retrieval can match by substring; larger files are truncated with `data.truncated: true`. Binary files are not read (set `AGENTMEMORY_FS_WATCH_ALLOW_BINARY=1` to override).
+
+Session id and project are required by the observe endpoint — set them via env, or the watcher generates a per-process `fs-watcher-<ts>-<rand>` session id and uses the first root's directory name as the project.
+
+Requires Node.js **>=20 LTS**. Recursive `fs.watch` needs Node 19.1.0+ on Linux; Node 20 is the minimum supported LTS line.
 
 ## Configuration
 
