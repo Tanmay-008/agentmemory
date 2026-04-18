@@ -1,16 +1,12 @@
 import styles from "./Features.module.css";
 
 interface Props {
-  hooks?: number;
-  mcpTools?: number;
-  restEndpoints?: number;
+  hooks: number;
+  mcpTools: number;
+  restEndpoints: number;
 }
 
-export function Features({
-  hooks = 12,
-  mcpTools = 44,
-  restEndpoints = 49,
-}: Props) {
+export function Features({ hooks, mcpTools, restEndpoints }: Props) {
   const FEATURES = [
     {
       k: `${hooks}`,

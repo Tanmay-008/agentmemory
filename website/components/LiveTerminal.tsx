@@ -57,11 +57,11 @@ function classFor(type: SegType) {
 }
 
 export function LiveTerminal({
-  mcpTools = 44,
-  hooks = 12,
+  mcpTools,
+  hooks,
 }: {
-  mcpTools?: number;
-  hooks?: number;
+  mcpTools: number;
+  hooks: number;
 }) {
   const termRef = useRef<HTMLElement>(null);
   const [status, setStatus] = useState("IDLE");

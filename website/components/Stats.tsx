@@ -11,13 +11,13 @@ interface StatItem {
 }
 
 export function Stats({
-  mcpTools = 44,
-  hooks = 12,
-  testsPassing = 777,
+  mcpTools,
+  hooks,
+  testsPassing,
 }: {
-  mcpTools?: number;
-  hooks?: number;
-  testsPassing?: number;
+  mcpTools: number;
+  hooks: number;
+  testsPassing: number;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +32,13 @@ export function Stats({
 
   useEffect(() => {
     if (!rootRef.current) return;
+    const root = rootRef.current;
+
+    // Reset per-element done flag so deps changing (e.g. a new meta snapshot
+    // at build) replays the count animation against the new target.
+    root
+      .querySelectorAll<HTMLDivElement>("[data-num]")
+      .forEach((el) => delete el.dataset.done);
 
     const count = (el: HTMLDivElement) => {
       const target = Number(el.dataset.target);
@@ -71,7 +78,7 @@ export function Stats({
       { threshold: 0.5 },
     );
 
-    rootRef.current
+    root
       .querySelectorAll<HTMLDivElement>("[data-stat]")
       .forEach((el) => io.observe(el));
 
