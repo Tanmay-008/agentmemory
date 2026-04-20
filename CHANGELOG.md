@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-04-21
+
+Trust-the-CLI patch. Three bugs that surfaced in real testing of v0.9.0: the dashboard viewer showed zeros for half its cards, the `import-jsonl` command crashed on anything but a perfect response, and `upgrade` hard-aborted on a cargo registry that never had the crate.
+
+### Fixed
+
+- **Viewer dashboard list endpoints** ([#172](https://github.com/rohitg00/agentmemory/pull/172)). `GET /agentmemory/semantic` and `GET /agentmemory/procedural` were never registered, and `GET /agentmemory/relations` returned 405 because only the POST trigger existed. The dashboard's `Promise.all` fan-out silently received null for those cards even when semantic, procedural, or relation data was present. Added `api::semantic-list`, `api::procedural-list`, and `api::relations-list` handlers next to `api::memories` in `src/triggers/api.ts`, each returning the shape the viewer already parses.
+- **CLI version drift** ([#173](https://github.com/rohitg00/agentmemory/pull/173)). The viewer brand badge hardcoded `v0.7.0` and the README "New in" banner still said `v0.8.2`. Replaced the viewer string with a `__AGENTMEMORY_VERSION__` placeholder substituted at render time by `document.ts` (same mechanism as the CSP nonce). Collapsed `src/version.ts` from a literal union of every historical release back to a single `VERSION` constant — the import-compat contract is the `supportedVersions` Set in `export-import.ts`, not the type.
+- **`import-jsonl` crashed with `Unexpected end of JSON input`** ([#174](https://github.com/rohitg00/agentmemory/pull/174)). The livez probe used fetch throws as the only failure signal — any stray service on port 3111 passed silently, then `res.json()` blew up when the real POST returned an empty body or HTML error. Probe now captures `probe.status` + body snippet on non-OK responses and the exception message on network failure, so the error distinguishes `unreachable (...)` from `reachable but unhealthy (HTTP 503: ...)`. The POST reads body as text, parses only if non-empty, requires `json.success === true`, and maps 401 → "set AGENTMEMORY_SECRET" and 404 → "upgrade server to v0.8.13+".
+- **`upgrade` aborted on `cargo install iii-engine`** ([#174](https://github.com/rohitg00/agentmemory/pull/174)). The crate was never published — the old flow called `requireSuccess`, which exited before the Docker pull ran. Swapped to the official installer used throughout the README and demo command: `curl -fsSL https://install.iii.dev/iii/main/install.sh | sh`. Installer failure is optional; a warn points at `iiidev/iii:latest` and the releases page at `iii-hq/iii`.
+
+### Infrastructure
+
+- Three integration tests cover the new list endpoints.
+- `VERSION` / `ExportData.version` union / `supportedVersions` / `test/export-import.test.ts` all bumped in lockstep.
+
+[0.9.1]: https://github.com/rohitg00/agentmemory/compare/v0.9.0...v0.9.1
+
 ## [0.9.0] — 2026-04-18
 
 Visibility + correctness release. Landing site, filesystem connector, MCP standalone now actually talks to the running server, health logic stops crying wolf, audit trail closes its last gap, and every memory path has a clear policy.
