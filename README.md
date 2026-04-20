@@ -155,7 +155,7 @@ You explain the same architecture every session. You re-discover the same bugs. 
 npx @agentmemory/agentmemory
 ```
 
-> **New in v0.8.2** — Security hardening (default localhost, viewer CSP nonces, mesh auth), `agentmemory demo` command, benchmark comparison vs mem0/Letta/Khoj, OpenClaw gateway plugin, real-time token savings in CLI + viewer.
+> **New in v0.9.0** — Landing site at [agent-memory.dev](https://agent-memory.dev), filesystem connector (`@agentmemory/fs-watcher`), standalone MCP now proxies to the running server so hooks and the viewer agree, audit policy codified across every delete path, health stops flagging `memory_critical` on tiny Node processes. Full notes in [CHANGELOG.md](CHANGELOG.md#090--2026-04-18).
 
 ---
 
