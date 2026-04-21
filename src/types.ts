@@ -21,6 +21,8 @@ export interface RawObservation {
   userPrompt?: string;
   assistantResponse?: string;
   raw: unknown;
+  modality?: "text" | "image" | "mixed";
+  imageData?: string;
 }
 
 export interface CompressedObservation {
@@ -36,6 +38,11 @@ export interface CompressedObservation {
   files: string[];
   importance: number;
   confidence?: number;
+  imageRef?: string;
+  imageData?: string;
+  imageDescription?: string;
+  modality?: "text" | "image" | "mixed";
+
 }
 
 export type ObservationType =
@@ -52,6 +59,7 @@ export type ObservationType =
   | "subagent"
   | "notification"
   | "task"
+  | "image"
   | "other";
 
 export interface Memory {
@@ -72,6 +80,8 @@ export interface Memory {
   sourceObservationIds?: string[];
   isLatest: boolean;
   forgetAfter?: string;
+  imageRef?: string;
+  imageData?: string;
 }
 
 export interface SessionSummary {
@@ -123,6 +133,7 @@ export interface MemoryProvider {
   name: string;
   compress(systemPrompt: string, userPrompt: string): Promise<string>;
   summarize(systemPrompt: string, userPrompt: string): Promise<string>;
+  describeImage?(imageData: string, mimeType: string, prompt: string): Promise<string>;
 }
 
 export interface AgentMemoryConfig {

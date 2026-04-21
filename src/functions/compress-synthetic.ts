@@ -85,7 +85,7 @@ export function buildSyntheticCompression(
     (s) => s.length > 0,
   );
 
-  return {
+  const result: CompressedObservation = {
     id: raw.id,
     sessionId: raw.sessionId,
     timestamp: raw.timestamp,
@@ -99,4 +99,7 @@ export function buildSyntheticCompression(
     importance: 5,
     confidence: 0.3,
   };
+  if (raw.modality) result.modality = raw.modality;
+  if (raw.imageData) result.imageData = raw.imageData;
+  return result;
 }

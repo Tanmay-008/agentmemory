@@ -1485,12 +1485,15 @@ export function registerApiTriggers(
     config: { api_path: "/agentmemory/leases/renew", http_method: "POST" },
   });
 
-  sdk.registerFunction("api::routine-create", 
+  sdk.registerFunction("api::routine-create",
     async (req: ApiRequest): Promise<Response> => {
       const authErr = checkAuth(req, secret);
       if (authErr) return authErr;
-      if (!req.body?.name) {
-        return { status_code: 400, body: { error: "name is required" } };
+      if (!req.body?.name || !req.body?.steps) {
+        return {
+          status_code: 400,
+          body: { error: "name and steps are required" },
+        };
       }
       const result = await sdk.trigger({ function_id: "mem::routine-create", payload: req.body });
       return { status_code: 201, body: result };

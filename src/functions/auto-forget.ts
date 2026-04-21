@@ -1,6 +1,6 @@
 import type { ISdk } from "iii-sdk";
 import type { Memory, CompressedObservation, Session } from "../types.js";
-import { KV, jaccardSimilarity } from "../state/schema.js";
+import { KV } from "../state/schema.js";
 import { StateKV } from "../state/kv.js";
 import { recordAudit } from "./audit.js";
 import { deleteAccessLog } from "./access-tracker.js";
@@ -25,6 +25,7 @@ export function registerAutoForgetFunction(sdk: ISdk, kv: StateKV): void {
     async (data: { dryRun?: boolean }): Promise<AutoForgetResult> => {
       const dryRun = data?.dryRun ?? false;
       const now = Date.now();
+      const { decrementImageRef } = await import("./image-refs.js");
 
       const result: AutoForgetResult = {
         ttlExpired: [],
@@ -42,6 +43,9 @@ export function registerAutoForgetFunction(sdk: ISdk, kv: StateKV): void {
             result.ttlExpired.push(mem.id);
             deletedIds.add(mem.id);
             if (!dryRun) {
+              if (mem.imageRef) {
+                await decrementImageRef(kv, sdk, mem.imageRef);
+              }
               await kv.delete(KV.memories, mem.id);
               await recordAudit(kv, "delete", "mem::auto-forget", [mem.id], {
                 resource: "memory",
@@ -120,7 +124,7 @@ export function registerAutoForgetFunction(sdk: ISdk, kv: StateKV): void {
               if (!dryRun) {
                 const older =
                   new Date(memA.createdAt).getTime() <
-                  new Date(memB.createdAt).getTime()
+                    new Date(memB.createdAt).getTime()
                     ? memA
                     : memB;
                 older.isLatest = false;
@@ -157,15 +161,25 @@ export function registerAutoForgetFunction(sdk: ISdk, kv: StateKV): void {
           if (age > 180 * MS_PER_DAY && (obs.importance ?? 5) <= 2) {
             result.lowValueObs.push(obs.id);
             if (!dryRun) {
-              await kv
-                .delete(KV.observations(sessions[i].id), obs.id)
-                .catch(() => {});
-              await recordAudit(kv, "delete", "mem::auto-forget", [obs.id], {
-                resource: "observation",
-                reason: "auto-forget low-value observation",
-                sessionId: sessions[i].id,
-                timestamp: obs.timestamp,
-              });
+              let deletedOk = false;
+              try {
+                await kv.delete(KV.observations(sessions[i].id), obs.id);
+                deletedOk = true;
+              } catch {
+                deletedOk = false;
+              }
+              if (deletedOk) {
+                if (obs.imageData) await decrementImageRef(kv, sdk, obs.imageData);
+                if (obs.imageRef && obs.imageRef !== obs.imageData) {
+                  await decrementImageRef(kv, sdk, obs.imageRef);
+                }
+                await recordAudit(kv, "delete", "mem::auto-forget", [obs.id], {
+                  resource: "observation",
+                  reason: "auto-forget low-value observation",
+                  sessionId: sessions[i].id,
+                  timestamp: obs.timestamp,
+                });
+              }
             }
           }
         }

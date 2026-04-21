@@ -126,9 +126,14 @@ export function registerRememberFunction(sdk: ISdk, kv: StateKV): void {
       const deletedMemoryIds: string[] = [];
       const deletedObservationIds: string[] = [];
       let deletedSession = false;
+      const { decrementImageRef } = await import("./image-refs.js");
 
       if (data.memoryId) {
+        const mem = await kv.get<Memory>(KV.memories, data.memoryId);
         await kv.delete(KV.memories, data.memoryId);
+        if (mem?.imageRef) {
+          await decrementImageRef(kv, sdk, mem.imageRef);
+        }
         await deleteAccessLog(kv, data.memoryId);
         deletedMemoryIds.push(data.memoryId);
         deleted++;
@@ -140,7 +145,15 @@ export function registerRememberFunction(sdk: ISdk, kv: StateKV): void {
         data.observationIds.length > 0
       ) {
         for (const obsId of data.observationIds) {
+          const obs = await kv.get<{ imageData?: string; imageRef?: string }>(
+            KV.observations(data.sessionId),
+            obsId,
+          );
           await kv.delete(KV.observations(data.sessionId), obsId);
+          if (obs?.imageData) await decrementImageRef(kv, sdk, obs.imageData);
+          if (obs?.imageRef && obs.imageRef !== obs.imageData) {
+            await decrementImageRef(kv, sdk, obs.imageRef);
+          }
           deletedObservationIds.push(obsId);
           deleted++;
         }
@@ -151,11 +164,15 @@ export function registerRememberFunction(sdk: ISdk, kv: StateKV): void {
         (!data.observationIds || data.observationIds.length === 0) &&
         !data.memoryId
       ) {
-        const observations = await kv.list<{ id: string }>(
+        const observations = await kv.list<{ id: string; imageData?: string; imageRef?: string }>(
           KV.observations(data.sessionId),
         );
         for (const obs of observations) {
           await kv.delete(KV.observations(data.sessionId), obs.id);
+          if (obs.imageData) await decrementImageRef(kv, sdk, obs.imageData);
+          if (obs.imageRef && obs.imageRef !== obs.imageData) {
+            await decrementImageRef(kv, sdk, obs.imageRef);
+          }
           deletedObservationIds.push(obs.id);
           deleted++;
         }

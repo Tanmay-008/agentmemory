@@ -40,6 +40,7 @@ export function registerEvictFunction(sdk: ISdk, kv: StateKV): void {
   sdk.registerFunction("mem::evict", 
     async (data: { dryRun?: boolean }): Promise<EvictionStats> => {
       const dryRun = data?.dryRun ?? false;
+      const { decrementImageRef } = await import("./image-refs.js");
 
       const configOverride = await kv
         .get<Partial<EvictionConfig>>(KV.config, "eviction")
@@ -120,6 +121,8 @@ export function registerEvictFunction(sdk: ISdk, kv: StateKV): void {
                 });
                 continue;
               }
+              if (o.imageData) await decrementImageRef(kv, sdk, o.imageData);
+              if (o.imageRef && o.imageRef !== o.imageData) await decrementImageRef(kv, sdk, o.imageRef);
               await recordAudit(kv, "delete", "mem::evict", [o.id], {
                 resource: "observation",
                 reason: "low_importance_old_observation",
@@ -161,6 +164,8 @@ export function registerEvictFunction(sdk: ISdk, kv: StateKV): void {
                 });
                 continue;
               }
+              if (o.imageData) await decrementImageRef(kv, sdk, o.imageData);
+              if (o.imageRef && o.imageRef !== o.imageData) await decrementImageRef(kv, sdk, o.imageRef);
               await recordAudit(kv, "delete", "mem::evict", [o.id], {
                 resource: "observation",
                 reason: "project_observation_cap",
@@ -195,6 +200,9 @@ export function registerEvictFunction(sdk: ISdk, kv: StateKV): void {
                 });
                 continue;
               }
+              if (mem.imageRef) {
+                await decrementImageRef(kv, sdk, mem.imageRef);
+              }
               await recordAudit(kv, "delete", "mem::evict", [mem.id], {
                 resource: "memory",
                 reason: "expired_memory",
@@ -226,6 +234,9 @@ export function registerEvictFunction(sdk: ISdk, kv: StateKV): void {
                   error: err instanceof Error ? err.message : String(err),
                 });
                 continue;
+              }
+              if (mem.imageRef) {
+                await decrementImageRef(kv, sdk, mem.imageRef);
               }
               await recordAudit(kv, "delete", "mem::evict", [mem.id], {
                 resource: "memory",
