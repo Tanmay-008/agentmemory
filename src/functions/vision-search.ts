@@ -2,6 +2,7 @@ import type { ISdk } from "iii-sdk";
 import type { EmbeddingProvider } from "../types.js";
 import { KV } from "../state/schema.js";
 import { StateKV } from "../state/kv.js";
+import { recordAudit } from "./audit.js";
 import { logger } from "../logger.js";
 
 interface StoredEmbedding {
@@ -44,6 +45,12 @@ export function registerVisionSearchFunctions(
           observationId: data.observationId,
         };
         await kv.set(KV.imageEmbeddings, data.imageRef, stored);
+        await recordAudit(kv, "vision_embed", "mem::vision-embed", [data.imageRef], {
+          modelName: imageProvider.name,
+          dimensions: stored.dimensions,
+          sessionId: data.sessionId,
+          observationId: data.observationId,
+        });
         return { success: true, imageRef: data.imageRef, dimensions: stored.dimensions };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -71,9 +78,13 @@ export function registerVisionSearchFunctions(
       try {
         if (data?.queryText) {
           queryVec = await imageProvider.embed(data.queryText);
-        } else if (data?.queryImageBase64 || data?.queryImageRef) {
-          const src = data.queryImageBase64 || (data.queryImageRef as string);
-          queryVec = await imageProvider.embedImage(src);
+        } else if (data?.queryImageBase64) {
+          const b64 = data.queryImageBase64.startsWith("data:")
+            ? data.queryImageBase64
+            : `data:image/png;base64,${data.queryImageBase64}`;
+          queryVec = await imageProvider.embedImage(b64);
+        } else if (data?.queryImageRef) {
+          queryVec = await imageProvider.embedImage(data.queryImageRef);
         } else {
           return { success: false, error: "queryText, queryImageRef, or queryImageBase64 required" };
         }

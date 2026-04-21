@@ -816,6 +816,17 @@ Create `~/.agentmemory/.env`:
                                    # LLM provider to compress the
                                    # observation — expect significant
                                    # token spend on active sessions.
+# AGENTMEMORY_IMAGE_EMBEDDINGS=false # OFF by default. When on, loads
+                                   # CLIP ViT-B/32 (512d) via
+                                   # @xenova/transformers and embeds
+                                   # every captured screenshot into
+                                   # mem:image-embeddings. Enables
+                                   # memory_vision_search (cross-modal:
+                                   # text→image or image→image cosine).
+                                   # Model downloads (~350 MB) on first
+                                   # use — lazy. Observe pipeline fires
+                                   # mem::vision-embed via triggerVoid,
+                                   # so capture latency is unchanged.
 # AGENTMEMORY_INJECT_CONTEXT=false # OFF by default (#143). When on:
                                    # - SessionStart may inject ~1-2K
                                    #   chars of project context into

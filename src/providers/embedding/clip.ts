@@ -7,7 +7,6 @@ type TransformersModule = {
     model: string,
   ) => Promise<ClipPipeline>;
   RawImage: {
-    read: (src: string | Blob | Buffer) => Promise<RawImageInstance>;
     fromBlob: (blob: Blob) => Promise<RawImageInstance>;
   };
 };
@@ -45,13 +44,12 @@ export class ClipEmbeddingProvider implements EmbeddingProvider {
     return output.tolist().map((v) => new Float32Array(v));
   }
 
-  async embedImage(imageBase64OrPath: string): Promise<Float32Array> {
+  async embedImage(src: string): Promise<Float32Array> {
     const t = await this.getTransformers();
-    const image = await loadImage(t, imageBase64OrPath);
+    const image = await loadImage(t, src);
     const extractor = await this.getImageExtractor();
     const output = await extractor(image);
-    const raw = output.data ?? new Float32Array(output.tolist()[0] || []);
-    const vec = new Float32Array(raw);
+    const vec = output.data ?? new Float32Array(output.tolist()[0] || []);
     return normalize(vec);
   }
 
@@ -90,11 +88,6 @@ async function loadImage(
     const comma = src.indexOf(",");
     const b64 = comma >= 0 ? src.slice(comma + 1) : src;
     const buf = Buffer.from(b64, "base64");
-    const blob = new Blob([buf]);
-    return t.RawImage.fromBlob(blob);
-  }
-  if (/^[A-Za-z0-9+/=]+$/.test(src.slice(0, 64)) && !src.includes("/")) {
-    const buf = Buffer.from(src, "base64");
     const blob = new Blob([buf]);
     return t.RawImage.fromBlob(blob);
   }

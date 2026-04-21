@@ -208,7 +208,7 @@ export interface EmbeddingProvider {
   dimensions: number;
   embed(text: string): Promise<Float32Array>;
   embedBatch(texts: string[]): Promise<Float32Array[]>;
-  embedImage?(imageBase64OrPath: string): Promise<Float32Array>;
+  embedImage?(src: string): Promise<Float32Array>;
 }
 
 export interface MemoryRelation {
@@ -502,7 +502,8 @@ export interface AuditEntry {
     | "skill_extract"
     | "core_add"
     | "core_remove"
-    | "auto_page";
+    | "auto_page"
+    | "vision_embed";
   userId?: string;
   functionId: string;
   targetIds: string[];
