@@ -1,5 +1,6 @@
 import { SearchIndex } from "../src/state/search-index.js";
 import { VectorIndex } from "../src/state/vector-index.js";
+import { MemoryVectorIndex } from "../src/state/vector-index-memory.js";
 import { HybridSearch } from "../src/state/hybrid-search.js";
 import { GraphRetrieval } from "../src/functions/graph-retrieval.js";
 import { extractEntitiesFromQuery } from "../src/functions/query-expansion.js";
@@ -176,13 +177,13 @@ async function evalDualStream(
 ): Promise<SystemMetrics> {
   const kv = mockKV();
   const bm25 = new SearchIndex();
-  const vector = new VectorIndex();
+  const vector = new VectorIndex(new MemoryVectorIndex());
   const dims = 384;
 
   for (const obs of observations) {
     bm25.add(obs);
     const text = [obs.title, obs.narrative, ...obs.concepts, ...obs.facts].join(" ");
-    vector.add(obs.id, obs.sessionId, deterministicEmbedding(text, dims));
+    await vector.add(obs.id, obs.sessionId, deterministicEmbedding(text, dims));
     await kv.set(`mem:obs:${obs.sessionId}`, obs.id, obs);
   }
 
@@ -245,13 +246,13 @@ async function evalTripleStream(
 ): Promise<SystemMetrics> {
   const kv = mockKV();
   const bm25 = new SearchIndex();
-  const vector = new VectorIndex();
+  const vector = new VectorIndex(new MemoryVectorIndex());
   const dims = 384;
 
   for (const obs of observations) {
     bm25.add(obs);
     const text = [obs.title, obs.narrative, ...obs.concepts, ...obs.facts].join(" ");
-    vector.add(obs.id, obs.sessionId, deterministicEmbedding(text, dims));
+    await vector.add(obs.id, obs.sessionId, deterministicEmbedding(text, dims));
     await kv.set(`mem:obs:${obs.sessionId}`, obs.id, obs);
   }
 

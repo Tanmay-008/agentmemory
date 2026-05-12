@@ -36,7 +36,8 @@ export class IndexPersistence {
     try {
       await this.kv.set(KV.bm25Index, "data", this.bm25.serialize());
       if (this.vector && this.vector.size > 0) {
-        await this.kv.set(KV.bm25Index, "vectors", this.vector.serialize());
+        const serialized = await this.vector.serialize();
+        await this.kv.set(KV.bm25Index, "vectors", serialized);
       }
     } catch (err) {
       this.logFailure(err);
@@ -45,10 +46,8 @@ export class IndexPersistence {
 
   async load(): Promise<{
     bm25: SearchIndex | null;
-    vector: VectorIndex | null;
   }> {
     let bm25: SearchIndex | null = null;
-    let vector: VectorIndex | null = null;
 
     const bm25Data = await this.kv
       .get<string>(KV.bm25Index, "data")
@@ -57,14 +56,16 @@ export class IndexPersistence {
       bm25 = SearchIndex.deserialize(bm25Data);
     }
 
-    const vecData = await this.kv
-      .get<string>(KV.bm25Index, "vectors")
-      .catch(() => null);
-    if (vecData && typeof vecData === "string") {
-      vector = VectorIndex.deserialize(vecData);
+    if (this.vector) {
+      const vecData = await this.kv
+        .get<string>(KV.bm25Index, "vectors")
+        .catch(() => null);
+      if (vecData && typeof vecData === "string") {
+        await this.vector.restoreFrom(vecData);
+      }
     }
 
-    return { bm25, vector };
+    return { bm25 };
   }
 
   stop(): void {

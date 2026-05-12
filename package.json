@@ -18,6 +18,7 @@
   },
   "scripts": {
     "build": "tsdown && (cp iii-config.yaml dist/ 2>/dev/null || true) && (cp iii-config.docker.yaml dist/ 2>/dev/null || true) && (cp docker-compose.yml dist/ 2>/dev/null || true) && mkdir -p dist/viewer && cp src/viewer/index.html dist/viewer/",
+    "postinstall": "node postinstall.js",
     "dev": "tsx src/index.ts",
     "start": "node dist/cli.mjs",
     "migrate": "node dist/functions/migrate.js",
@@ -40,6 +41,7 @@
   "files": [
     "dist/",
     "plugin/",
+    "postinstall.js",
     "iii-config.yaml",
     "iii-config.docker.yaml",
     "docker-compose.yml",
@@ -63,8 +65,10 @@
   },
   "optionalDependencies": {
     "@xenova/transformers": "^2.17.2",
+    "better-sqlite3": "^11.0.0",
     "onnxruntime-node": "^1.14.0",
-    "onnxruntime-web": "^1.14.0"
+    "onnxruntime-web": "^1.14.0",
+    "sqlite-vec": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

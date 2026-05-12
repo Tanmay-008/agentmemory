@@ -1,5 +1,6 @@
 import { SearchIndex } from "../src/state/search-index.js";
 import { VectorIndex } from "../src/state/vector-index.js";
+import { MemoryVectorIndex } from "../src/state/vector-index-memory.js";
 import { HybridSearch } from "../src/state/hybrid-search.js";
 import type { CompressedObservation } from "../src/types.js";
 import { generateScaleDataset, generateDataset } from "./dataset.js";
@@ -100,14 +101,14 @@ async function benchmarkScale(counts: number[]): Promise<ScaleResult[]> {
 
     const buildStart = performance.now();
     const bm25 = new SearchIndex();
-    const vector = new VectorIndex();
+    const vector = new VectorIndex(new MemoryVectorIndex());
     const kv = mockKV();
     const dims = 384;
 
     for (const obs of observations) {
       bm25.add(obs);
       const text = [obs.title, obs.narrative, ...obs.concepts].join(" ");
-      vector.add(obs.id, obs.sessionId, deterministicEmbedding(text, dims));
+      await vector.add(obs.id, obs.sessionId, deterministicEmbedding(text, dims));
       await kv.set(`mem:obs:${obs.sessionId}`, obs.id, obs);
     }
     const buildMs = performance.now() - buildStart;
@@ -137,7 +138,7 @@ async function benchmarkScale(counts: number[]): Promise<ScaleResult[]> {
     }
 
     const bm25Ser = bm25.serialize();
-    const vecSer = vector.serialize();
+    const vecSer = await vector.serialize();
 
     const allText = observations.map(o =>
       `- ${o.title}: ${o.narrative.slice(0, 80)}... [${o.concepts.slice(0, 3).join(", ")}]`
@@ -184,13 +185,13 @@ async function benchmarkCrossSession(): Promise<CrossSessionResult[]> {
 
   const bm25 = new SearchIndex();
   const kv = mockKV();
-  const vector = new VectorIndex();
+  const vector = new VectorIndex(new MemoryVectorIndex());
   const dims = 384;
 
   for (const obs of observations) {
     bm25.add(obs);
     const text = [obs.title, obs.narrative, ...obs.concepts].join(" ");
-    vector.add(obs.id, obs.sessionId, deterministicEmbedding(text, dims));
+    await vector.add(obs.id, obs.sessionId, deterministicEmbedding(text, dims));
     await kv.set(`mem:obs:${obs.sessionId}`, obs.id, obs);
   }
 

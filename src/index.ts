@@ -19,7 +19,10 @@ import {
   createImageEmbeddingProvider,
 } from "./providers/index.js";
 import { StateKV } from "./state/kv.js";
+import { KV } from "./state/schema.js";
 import { VectorIndex } from "./state/vector-index.js";
+import { MemoryVectorIndex } from "./state/vector-index-memory.js";
+import { SqliteVectorIndex } from "./state/vector-index-sqlite.js";
 import { HybridSearch } from "./state/hybrid-search.js";
 import { IndexPersistence } from "./state/index-persistence.js";
 import { registerPrivacyFunction } from "./functions/privacy.js";
@@ -173,7 +176,22 @@ async function main() {
   const metricsStore = new MetricsStore(kv);
   const dedupMap = new DedupMap();
 
-  const vectorIndex = embeddingProvider ? new VectorIndex() : null;
+  let vectorIndex: VectorIndex | null = null;
+  if (embeddingProvider) {
+    const vectorBackendEnv = getEnvVar("VECTOR_BACKEND") || "memory";
+    if (vectorBackendEnv === "sqlite-vec") {
+      const dbPath = getEnvVar("VECTOR_DB_PATH") || "./data/vector_store.db";
+      vectorIndex = new VectorIndex(
+        new SqliteVectorIndex(dbPath, embeddingProvider.dimensions),
+      );
+      console.log(
+        `[agentmemory] Vector backend: sqlite-vec (${dbPath}, ${embeddingProvider.dimensions} dims)`,
+      );
+    } else {
+      vectorIndex = new VectorIndex(new MemoryVectorIndex());
+      console.log(`[agentmemory] Vector backend: in-memory`);
+    }
+  }
 
   const meterAccessor = hasGetMeter(sdk)
     ? (sdk.getMeter.bind(sdk) as (name: string) => unknown)
@@ -335,11 +353,28 @@ async function main() {
       `[agentmemory] Loaded persisted BM25 index (${bm25Index.size} docs)`,
     );
   }
-  if (loaded?.vector && vectorIndex && loaded.vector.size > 0) {
-    vectorIndex.restoreFrom(loaded.vector);
+  if (vectorIndex && vectorIndex.size > 0) {
     console.log(
       `[agentmemory] Loaded persisted vector index (${vectorIndex.size} vectors)`,
     );
+  }
+
+  const vectorBackendEnv = getEnvVar("VECTOR_BACKEND") || "memory";
+  if (vectorBackendEnv === "sqlite-vec" && vectorIndex) {
+    const legacyVecData = await kv
+      .get<string>(KV.bm25Index, "vectors")
+      .catch(() => null);
+    if (legacyVecData && typeof legacyVecData === "string" && legacyVecData !== "[]") {
+      const sizeBefore = vectorIndex.size;
+      await vectorIndex.restoreFrom(legacyVecData);
+      const migrated = vectorIndex.size - sizeBefore;
+      if (migrated > 0) {
+        console.log(
+          `[agentmemory] Migrated ${migrated} vectors from legacy KV to sqlite-vec`,
+        );
+        await kv.set(KV.bm25Index, "vectors", "[]");
+      }
+    }
   }
 
   const needsRebuild = bm25Index.size === 0;

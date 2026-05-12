@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { IndexPersistence } from "../src/state/index-persistence.js";
 import { SearchIndex } from "../src/state/search-index.js";
 import { VectorIndex } from "../src/state/vector-index.js";
+import { MemoryVectorIndex } from "../src/state/vector-index-memory.js";
 import type { CompressedObservation } from "../src/types.js";
 
 function mockKV() {
@@ -72,15 +73,16 @@ describe("IndexPersistence", () => {
 
   it("saves and loads vector index round-trip", async () => {
     const bm25 = new SearchIndex();
-    const vector = new VectorIndex();
-    vector.add("obs_1", "ses_1", new Float32Array([0.1, 0.2, 0.3]));
+    const vector = new VectorIndex(new MemoryVectorIndex());
+    await vector.add("obs_1", "ses_1", new Float32Array([0.1, 0.2, 0.3]));
 
     const persistence = new IndexPersistence(kv as never, bm25, vector);
     await persistence.save();
 
-    const loaded = await persistence.load();
-    expect(loaded.vector).not.toBeNull();
-    expect(loaded.vector!.size).toBe(1);
+    const vector2 = new VectorIndex(new MemoryVectorIndex());
+    const persistence2 = new IndexPersistence(kv as never, new SearchIndex(), vector2);
+    await persistence2.load();
+    expect(vector2.size).toBe(1);
   });
 
   it("scheduleSave debounces multiple calls", async () => {
@@ -119,7 +121,6 @@ describe("IndexPersistence", () => {
 
     const loaded = await persistence.load();
     expect(loaded.bm25).toBeNull();
-    expect(loaded.vector).toBeNull();
   });
 
   it("scheduled save swallows kv.set rejection without unhandledRejection (#204)", async () => {

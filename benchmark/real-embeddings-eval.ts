@@ -1,5 +1,6 @@
 import { SearchIndex } from "../src/state/search-index.js";
 import { VectorIndex } from "../src/state/vector-index.js";
+import { MemoryVectorIndex } from "../src/state/vector-index-memory.js";
 import { HybridSearch } from "../src/state/hybrid-search.js";
 import { LocalEmbeddingProvider } from "../src/providers/embedding/local.js";
 import type { CompressedObservation, EmbeddingProvider } from "../src/types.js";
@@ -106,7 +107,7 @@ async function evalSystem(
 ): Promise<SystemResult> {
   const kv = mockKV();
   const bm25 = new SearchIndex();
-  const vector = provider ? new VectorIndex() : null;
+  const vector = provider ? new VectorIndex(new MemoryVectorIndex()) : null;
 
   console.log(`  Indexing ${observations.length} observations...`);
   const embedStart = performance.now();
@@ -123,7 +124,7 @@ async function evalSystem(
       const texts = batch.map(o => obsToText(o));
       const embeddings = await provider.embedBatch(texts);
       for (let j = 0; j < batch.length; j++) {
-        vector.add(batch[j].id, batch[j].sessionId, embeddings[j]);
+        await vector.add(batch[j].id, batch[j].sessionId, embeddings[j]);
       }
       if ((i + batchSize) % 100 === 0 || i + batchSize >= observations.length) {
         process.stdout.write(`\r  Embedded ${Math.min(i + batchSize, observations.length)}/${observations.length}`);

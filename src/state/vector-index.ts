@@ -1,130 +1,51 @@
-function float32ToBase64(arr: Float32Array): string {
-  return Buffer.from(arr.buffer).toString("base64");
-}
-
-function base64ToFloat32(b64: string): Float32Array {
-  return new Float32Array(Buffer.from(b64, "base64").buffer);
-}
-
-function cosineSimilarity(a: Float32Array, b: Float32Array): number {
-  if (a.length !== b.length) return 0;
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
+export interface VectorBackend {
+  add(obsId: string, sessionId: string, embedding: Float32Array): Promise<void>;
+  remove(obsId: string): Promise<void>;
+  search(
+    query: Float32Array,
+    limit?: number,
+  ): Promise<Array<{ obsId: string; sessionId: string; score: number }>>;
+  readonly size: number;
+  clear(): Promise<void>;
+  restoreFrom(serializedJson: string): Promise<void>;
+  serialize(): Promise<string>;
 }
 
 export class VectorIndex {
-  private vectors: Map<string, { embedding: Float32Array; sessionId: string }> =
-    new Map();
+  constructor(private backend: VectorBackend) {}
 
-  add(obsId: string, sessionId: string, embedding: Float32Array): void {
-    this.vectors.set(obsId, { embedding, sessionId });
+  async add(
+    obsId: string,
+    sessionId: string,
+    embedding: Float32Array,
+  ): Promise<void> {
+    return this.backend.add(obsId, sessionId, embedding);
   }
 
-  remove(obsId: string): void {
-    this.vectors.delete(obsId);
+  async remove(obsId: string): Promise<void> {
+    return this.backend.remove(obsId);
   }
 
-  search(
+  async search(
     query: Float32Array,
     limit = 20,
-  ): Array<{ obsId: string; sessionId: string; score: number }> {
-    const results: Array<{
-      obsId: string;
-      sessionId: string;
-      score: number;
-    }> = [];
-    let minScore = -Infinity;
-
-    for (const [obsId, entry] of this.vectors) {
-      const score = cosineSimilarity(query, entry.embedding);
-      if (results.length < limit) {
-        results.push({ obsId, sessionId: entry.sessionId, score });
-        if (results.length === limit) {
-          results.sort((a, b) => a.score - b.score);
-          minScore = results[0].score;
-        }
-      } else if (score > minScore) {
-        results[0] = { obsId, sessionId: entry.sessionId, score };
-        results.sort((a, b) => a.score - b.score);
-        minScore = results[0].score;
-      }
-    }
-
-    results.sort((a, b) => b.score - a.score);
-    return results;
+  ): Promise<Array<{ obsId: string; sessionId: string; score: number }>> {
+    return this.backend.search(query, limit);
   }
 
   get size(): number {
-    return this.vectors.size;
+    return this.backend.size;
   }
 
-  clear(): void {
-    this.vectors.clear();
+  async clear(): Promise<void> {
+    return this.backend.clear();
   }
 
-  restoreFrom(other: VectorIndex): void {
-    const src = (other as any).vectors as Map<
-      string,
-      { embedding: Float32Array; sessionId: string }
-    >;
-    this.vectors = new Map();
-    for (const [obsId, entry] of src) {
-      this.vectors.set(obsId, {
-        embedding: new Float32Array(entry.embedding),
-        sessionId: entry.sessionId,
-      });
-    }
+  async restoreFrom(serializedJson: string): Promise<void> {
+    return this.backend.restoreFrom(serializedJson);
   }
 
-  serialize(): string {
-    const data: Array<[string, { embedding: string; sessionId: string }]> = [];
-    for (const [obsId, entry] of this.vectors) {
-      data.push([
-        obsId,
-        {
-          embedding: float32ToBase64(entry.embedding),
-          sessionId: entry.sessionId,
-        },
-      ]);
-    }
-    return JSON.stringify(data);
-  }
-
-  static deserialize(json: string): VectorIndex {
-    const idx = new VectorIndex();
-    let data: unknown;
-    try {
-      data = JSON.parse(json);
-    } catch {
-      return idx;
-    }
-    if (!Array.isArray(data)) return idx;
-    for (const row of data) {
-      try {
-        if (!Array.isArray(row) || row.length < 2) continue;
-        const [obsId, entry] = row;
-        if (
-          typeof obsId !== "string" ||
-          typeof entry?.embedding !== "string" ||
-          typeof entry?.sessionId !== "string"
-        )
-          continue;
-        idx.vectors.set(obsId, {
-          embedding: base64ToFloat32(entry.embedding),
-          sessionId: entry.sessionId,
-        });
-      } catch {
-        continue;
-      }
-    }
-    return idx;
+  async serialize(): Promise<string> {
+    return this.backend.serialize();
   }
 }

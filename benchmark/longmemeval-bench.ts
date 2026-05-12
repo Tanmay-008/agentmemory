@@ -1,5 +1,6 @@
 import { SearchIndex } from "../src/state/search-index.js";
 import { VectorIndex } from "../src/state/vector-index.js";
+import { MemoryVectorIndex } from "../src/state/vector-index-memory.js";
 import { HybridSearch } from "../src/state/hybrid-search.js";
 import type {
   CompressedObservation,
@@ -148,7 +149,7 @@ async function runBenchmark(
     }
 
     const bm25 = new SearchIndex();
-    const vector = mode !== "bm25" ? new VectorIndex() : null;
+    const vector = mode !== "bm25" ? new VectorIndex(new MemoryVectorIndex()) : null;
     const kv = new MockKV();
 
     const observations: CompressedObservation[] = [];
@@ -173,7 +174,7 @@ async function runBenchmark(
           const embedding = await embeddingProvider.embed(
             chunk.text.slice(0, 512),
           );
-          vector.add(obs.id, chunk.sessionId, embedding);
+          await vector.add(obs.id, chunk.sessionId, embedding);
         } catch {}
       }
 
