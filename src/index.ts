@@ -372,8 +372,8 @@ async function main() {
         console.log(
           `[agentmemory] Migrated ${migrated} vectors from legacy KV to sqlite-vec`,
         );
-        await kv.set(KV.bm25Index, "vectors", "[]");
       }
+      await kv.set(KV.bm25Index, "vectors", "[]");
     }
   }
 

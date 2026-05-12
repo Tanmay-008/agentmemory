@@ -14,43 +14,46 @@ export class SqliteVectorIndex implements VectorBackend {
   private db: any = null;
   private dimensions: number;
   private dbPath: string;
-  private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   constructor(dbPath: string, dimensions: number) {
     this.dbPath = dbPath;
     this.dimensions = dimensions;
   }
 
-  private async ensureInitialized(): Promise<void> {
-    if (this.initialized) return;
+  private ensureInitialized(): Promise<void> {
+    if (this.initPromise) return this.initPromise;
 
-    const deps = await loadNativeDeps();
-    if (!deps) {
-      throw new Error(
-        "[agentmemory] better-sqlite3/sqlite-vec not installed. Run: npm install better-sqlite3 sqlite-vec",
-      );
-    }
+    this.initPromise = (async () => {
+      const deps = await loadNativeDeps();
+      if (!deps) {
+        this.initPromise = null;
+        throw new Error(
+          "[agentmemory] better-sqlite3/sqlite-vec not installed. Run: npm install better-sqlite3 sqlite-vec",
+        );
+      }
 
-    const { Database, sqliteVec } = deps;
-    this.db = new Database(this.dbPath);
-    sqliteVec.load(this.db);
+      const { Database, sqliteVec } = deps;
+      this.db = new Database(this.dbPath);
+      sqliteVec.load(this.db);
 
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS vec_meta (
-        rowid INTEGER PRIMARY KEY AUTOINCREMENT,
-        obs_id TEXT UNIQUE NOT NULL,
-        session_id TEXT NOT NULL
-      )
-    `);
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS vec_meta (
+          rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+          obs_id TEXT UNIQUE NOT NULL,
+          session_id TEXT NOT NULL
+        )
+      `);
 
-    this.db.exec(`
-      CREATE VIRTUAL TABLE IF NOT EXISTS vec_data USING vec0(
-        rowid INTEGER PRIMARY KEY,
-        embedding float[${this.dimensions}]
-      )
-    `);
+      this.db.exec(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS vec_data USING vec0(
+          rowid INTEGER PRIMARY KEY,
+          embedding float[${this.dimensions}]
+        )
+      `);
+    })();
 
-    this.initialized = true;
+    return this.initPromise;
   }
 
   async add(
@@ -60,16 +63,30 @@ export class SqliteVectorIndex implements VectorBackend {
   ): Promise<void> {
     await this.ensureInitialized();
 
-    const insert = this.db.transaction(() => {
-      const info = this.db
-        .prepare("INSERT OR REPLACE INTO vec_meta (obs_id, session_id) VALUES (?, ?)")
-        .run(obsId, sessionId);
-      this.db
-        .prepare("INSERT OR REPLACE INTO vec_data (rowid, embedding) VALUES (?, ?)")
-        .run(info.lastInsertRowid, Buffer.from(embedding.buffer));
+    const upsert = this.db.transaction(() => {
+      const existing = this.db
+        .prepare("SELECT rowid FROM vec_meta WHERE obs_id = ?")
+        .get(obsId) as { rowid: number } | undefined;
+
+      if (existing) {
+        this.db.prepare("DELETE FROM vec_data WHERE rowid = ?").run(existing.rowid);
+        this.db
+          .prepare("UPDATE vec_meta SET session_id = ? WHERE rowid = ?")
+          .run(sessionId, existing.rowid);
+        this.db
+          .prepare("INSERT INTO vec_data (rowid, embedding) VALUES (?, ?)")
+          .run(existing.rowid, Buffer.from(embedding.buffer, embedding.byteOffset, embedding.byteLength));
+      } else {
+        const info = this.db
+          .prepare("INSERT INTO vec_meta (obs_id, session_id) VALUES (?, ?)")
+          .run(obsId, sessionId);
+        this.db
+          .prepare("INSERT INTO vec_data (rowid, embedding) VALUES (?, ?)")
+          .run(info.lastInsertRowid, Buffer.from(embedding.buffer, embedding.byteOffset, embedding.byteLength));
+      }
     });
 
-    insert();
+    upsert();
   }
 
   async remove(obsId: string): Promise<void> {
@@ -93,6 +110,7 @@ export class SqliteVectorIndex implements VectorBackend {
   ): Promise<Array<{ obsId: string; sessionId: string; score: number }>> {
     await this.ensureInitialized();
 
+    const queryBuf = Buffer.from(query.buffer, query.byteOffset, query.byteLength);
     const rows = this.db
       .prepare(
         `SELECT v.rowid, v.distance, m.obs_id, m.session_id
@@ -102,7 +120,7 @@ export class SqliteVectorIndex implements VectorBackend {
          ORDER BY v.distance
          LIMIT ?`,
       )
-      .all(Buffer.from(query.buffer), limit) as Array<{
+      .all(queryBuf, limit) as Array<{
       rowid: number;
       distance: number;
       obs_id: string;
@@ -117,7 +135,7 @@ export class SqliteVectorIndex implements VectorBackend {
   }
 
   get size(): number {
-    if (!this.initialized || !this.db) return 0;
+    if (!this.initPromise || !this.db) return 0;
     const row = this.db.prepare("SELECT COUNT(*) as cnt FROM vec_meta").get() as {
       cnt: number;
     };
@@ -152,19 +170,29 @@ export class SqliteVectorIndex implements VectorBackend {
             typeof entry?.sessionId !== "string"
           )
             continue;
-          const embedding = new Float32Array(
-            Buffer.from(entry.embedding, "base64").buffer,
-          );
-          const info = this.db
-            .prepare(
-              "INSERT OR REPLACE INTO vec_meta (obs_id, session_id) VALUES (?, ?)",
-            )
-            .run(obsId, entry.sessionId);
-          this.db
-            .prepare(
-              "INSERT OR REPLACE INTO vec_data (rowid, embedding) VALUES (?, ?)",
-            )
-            .run(info.lastInsertRowid, Buffer.from(embedding.buffer));
+          const buf = Buffer.from(entry.embedding, "base64");
+          const embedding = new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
+
+          const existing = this.db
+            .prepare("SELECT rowid FROM vec_meta WHERE obs_id = ?")
+            .get(obsId) as { rowid: number } | undefined;
+
+          if (existing) {
+            this.db.prepare("DELETE FROM vec_data WHERE rowid = ?").run(existing.rowid);
+            this.db
+              .prepare("UPDATE vec_meta SET session_id = ? WHERE rowid = ?")
+              .run(entry.sessionId, existing.rowid);
+            this.db
+              .prepare("INSERT INTO vec_data (rowid, embedding) VALUES (?, ?)")
+              .run(existing.rowid, Buffer.from(embedding.buffer, embedding.byteOffset, embedding.byteLength));
+          } else {
+            const info = this.db
+              .prepare("INSERT INTO vec_meta (obs_id, session_id) VALUES (?, ?)")
+              .run(obsId, entry.sessionId);
+            this.db
+              .prepare("INSERT INTO vec_data (rowid, embedding) VALUES (?, ?)")
+              .run(info.lastInsertRowid, Buffer.from(embedding.buffer, embedding.byteOffset, embedding.byteLength));
+          }
         } catch {
           continue;
         }
