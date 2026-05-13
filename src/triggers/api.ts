@@ -836,7 +836,7 @@ export function registerApiTriggers(
 
   sdk.registerFunction("api::smart-search", 
     async (
-      req: ApiRequest<{ query?: string; expandIds?: string[]; limit?: number }>,
+      req: ApiRequest<{ query?: string; expandIds?: string[]; limit?: number; mode?: string }>,
     ): Promise<Response> => {
       const authErr = checkAuth(req, secret);
       if (authErr) return authErr;
@@ -849,7 +849,13 @@ export function registerApiTriggers(
           body: { error: "query or expandIds is required" },
         };
       }
-      const result = await sdk.trigger({ function_id: "mem::smart-search", payload: req.body });
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const payload: Record<string, unknown> = {};
+      if (body.query !== undefined) payload.query = body.query;
+      if (body.expandIds !== undefined) payload.expandIds = body.expandIds;
+      if (body.limit !== undefined) payload.limit = body.limit;
+      if (body.mode === "graph") payload.mode = "graph";
+      const result = await sdk.trigger({ function_id: "mem::smart-search", payload });
       return { status_code: 200, body: result };
     },
   );

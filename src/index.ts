@@ -82,6 +82,9 @@ import { registerTemporalGraphFunctions } from "./functions/temporal-graph.js";
 import { registerRetentionFunctions } from "./functions/retention.js";
 import { registerCompressFileFunction } from "./functions/compress-file.js";
 import { registerReplayFunctions } from "./functions/replay.js";
+import { registerConceptEdgesFunctions } from "./functions/concept-edges.js";
+import { registerConceptGraphSearchFunction } from "./functions/concept-graph-search.js";
+import { registerConceptBackfillFunction } from "./functions/concept-backfill.js";
 import { registerApiTriggers } from "./triggers/api.js";
 import { registerEventTriggers } from "./triggers/events.js";
 import { registerMcpEndpoints } from "./mcp/server.js";
@@ -281,6 +284,9 @@ async function main() {
   registerRetentionFunctions(sdk, kv);
   registerCompressFileFunction(sdk, kv, provider);
   registerReplayFunctions(sdk, kv);
+  registerConceptEdgesFunctions(sdk, kv);
+  registerConceptGraphSearchFunction(sdk, kv);
+  registerConceptBackfillFunction(sdk, kv);
   console.log(
     `[agentmemory] v0.6 advanced retrieval: sliding-window, query-expansion, temporal-graph, retention-scoring`,
   );
@@ -363,6 +369,8 @@ async function main() {
   console.log(
     `[agentmemory] Endpoints: 107 REST + ${getAllTools().length} MCP tools + 6 MCP resources + 3 MCP prompts`,
   );
+
+  sdk.trigger({ function_id: "mem::concept-backfill", payload: {} }).catch(() => {});
 
   const viewerPort = config.restPort + 2;
   const viewerServer = startViewerServer(

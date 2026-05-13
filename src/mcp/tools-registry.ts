@@ -903,6 +903,26 @@ const ESSENTIAL_TOOLS = new Set([
   "memory_reflect",
 ]);
 
+export const CONCEPT_GRAPH_TOOLS: McpToolDef[] = [
+  {
+    name: "memory_graph_search",
+    description:
+      "Graph-enhanced search that expands query concepts via co-occurrence relationships. Finds memories related to your query even when they use different terminology. Separate from memory_smart_search so latency profile is opt-in.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query" },
+        depth: {
+          type: "number",
+          description: "BFS expansion depth (1 or 2, default 2). Depth 3+ is refused.",
+        },
+        limit: { type: "number", description: "Max results (default 20)" },
+      },
+      required: ["query"],
+    },
+  },
+];
+
 export function getAllTools(): McpToolDef[] {
   return [
     ...CORE_TOOLS,
@@ -913,6 +933,7 @@ export function getAllTools(): McpToolDef[] {
     ...V070_TOOLS,
     ...V073_TOOLS,
     ...V010_SLOTS_TOOLS,
+    ...CONCEPT_GRAPH_TOOLS,
   ];
 }
 

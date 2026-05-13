@@ -107,6 +107,14 @@ export function registerRememberFunction(sdk: ISdk, kv: StateKV): void {
           });
         }
 
+        if (memory.concepts.length >= 2) {
+          sdk.trigger({
+            function_id: "mem::concept-edge-upsert",
+            payload: { concepts: memory.concepts },
+            action: TriggerAction.Void(),
+          }).catch(() => {});
+        }
+
         logger.info("Memory saved", {
           memId: memory.id,
           type: memory.type,

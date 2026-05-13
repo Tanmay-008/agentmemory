@@ -460,6 +460,36 @@ export function registerMcpEndpoints(
             }
           }
 
+          case "memory_graph_search": {
+            if (typeof args.query !== "string" || !args.query.trim()) {
+              return {
+                status_code: 400,
+                body: { error: "query is required for memory_graph_search" },
+              };
+            }
+            const depth = asNumber(args.depth, 2) ?? 2;
+            if (depth > 2) {
+              return {
+                status_code: 400,
+                body: { error: "depth_out_of_range", message: `BFS depth ${depth} exceeds maximum of 2` },
+              };
+            }
+            const limit = Math.max(1, Math.min(100, asNumber(args.limit, 20) ?? 20));
+            const concepts = args.query.split(/\s+/).map((t: string) => t.trim().toLowerCase()).filter((t: string) => t.length > 1);
+            const result = await sdk.trigger({
+              function_id: "mem::concept-graph-search",
+              payload: { concepts, depth, limit },
+            });
+            return {
+              status_code: 200,
+              body: {
+                content: [
+                  { type: "text", text: JSON.stringify(result, null, 2) },
+                ],
+              },
+            };
+          }
+
           case "memory_consolidate": {
             try {
               const result = await sdk.trigger({ function_id: "mem::consolidate-pipeline", payload: {

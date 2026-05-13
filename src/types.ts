@@ -412,6 +412,16 @@ export interface GraphQueryResult {
   depth: number;
 }
 
+export interface ConceptEdge {
+  id: string;
+  from: string;
+  to: string;
+  strength: number;
+  reinforcements: number;
+  lastSeenAt: string;
+  createdAt: string;
+}
+
 export type ConsolidationTier =
   | "working"
   | "episodic"
@@ -522,7 +532,9 @@ export interface AuditEntry {
     | "slot_replace"
     | "slot_create"
     | "slot_delete"
-    | "slot_reflect";
+    | "slot_reflect"
+    | "concept_edge_upsert"
+    | "concept_backfill";
   userId?: string;
   functionId: string;
   targetIds: string[];

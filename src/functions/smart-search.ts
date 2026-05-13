@@ -3,6 +3,7 @@ import type {
   CompactSearchResult,
   CompressedObservation,
   HybridSearchResult,
+  Memory,
 } from "../types.js";
 import { KV } from "../state/schema.js";
 import { StateKV } from "../state/kv.js";
@@ -19,6 +20,7 @@ export function registerSmartSearchFunction(
       query?: string;
       expandIds?: Array<string | { obsId: string; sessionId: string }>;
       limit?: number;
+      mode?: "graph";
     }) => {
 
       if (data.expandIds && data.expandIds.length > 0) {
@@ -84,11 +86,54 @@ export function registerSmartSearchFunction(
         compact.map((r) => r.obsId),
       );
 
+      if (data.mode === "graph") {
+        try {
+          const graphResult = await sdk.trigger<
+            { concepts: string[]; depth: number; limit: number },
+            { success: boolean; results?: Array<{ memoryId: string; score: number; matchedConcepts: string[] }> }
+          >({
+            function_id: "mem::concept-graph-search",
+            payload: {
+              concepts: data.query.split(/\s+/).filter((t) => t.length > 1),
+              depth: 2,
+              limit,
+            },
+          });
+
+          if (graphResult.results && graphResult.results.length > 0) {
+            const existingObsIds = new Set(compact.map((r) => r.obsId));
+            const memories = await kv.list<Memory>(KV.memories);
+            const memoryMap = new Map(memories.map((m) => [m.id, m]));
+
+            for (const gr of graphResult.results) {
+              const mem = memoryMap.get(gr.memoryId);
+              if (!mem) continue;
+              for (const obsId of mem.sourceObservationIds || []) {
+                if (existingObsIds.has(obsId)) continue;
+                existingObsIds.add(obsId);
+                compact.push({
+                  obsId,
+                  sessionId: "",
+                  title: mem.title,
+                  type: mem.type as any,
+                  score: gr.score * 0.8,
+                  timestamp: mem.createdAt,
+                });
+              }
+            }
+
+            compact.sort((a, b) => b.score - a.score);
+            compact.splice(limit);
+          }
+        } catch {}
+      }
+
       logger.info("Smart search compact", {
         query: data.query,
         results: compact.length,
+        mode: data.mode,
       });
-      return { mode: "compact", results: compact };
+      return { mode: data.mode === "graph" ? "graph" : "compact", results: compact };
     },
   );
 }

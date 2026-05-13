@@ -46,6 +46,7 @@ export const KV = {
   slots: "mem:slots",
   globalSlots: "mem:slots:global",
   state: "mem:state",
+  conceptEdges: "mem:concept-edges",
 } as const;
 
 export const STREAM = {
