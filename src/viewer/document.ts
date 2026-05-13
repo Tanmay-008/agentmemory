@@ -34,9 +34,11 @@ export function renderViewerDocument():
   }
 
   const nonce = createViewerNonce();
+  const conceptGraphViewerEnabled = process.env.AGENTMEMORY_CONCEPT_GRAPH_VIEWER === "true" ? "true" : "false";
   const html = template
     .replaceAll(VIEWER_NONCE_PLACEHOLDER, nonce)
-    .replaceAll(VIEWER_VERSION_PLACEHOLDER, VERSION);
+    .replaceAll(VIEWER_VERSION_PLACEHOLDER, VERSION)
+    .replaceAll("__AGENTMEMORY_CONCEPT_GRAPH_VIEWER__", conceptGraphViewerEnabled);
   return {
     found: true,
     html,

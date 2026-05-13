@@ -86,7 +86,9 @@ export function registerSmartSearchFunction(
         compact.map((r) => r.obsId),
       );
 
+      let finalMode = data.mode;
       if (data.mode === "graph") {
+        let graphSuccess = false;
         try {
           const graphResult = await sdk.trigger<
             { concepts: string[]; depth: number; limit: number },
@@ -100,7 +102,8 @@ export function registerSmartSearchFunction(
             },
           });
 
-          if (graphResult.results && graphResult.results.length > 0) {
+          if (graphResult.success && graphResult.results && graphResult.results.length > 0) {
+            graphSuccess = true;
             const existingObsIds = new Set(compact.map((r) => r.obsId));
             const memories = await kv.list<Memory>(KV.memories);
             const memoryMap = new Map(memories.map((m) => [m.id, m]));
@@ -125,15 +128,20 @@ export function registerSmartSearchFunction(
             compact.sort((a, b) => b.score - a.score);
             compact.splice(limit);
           }
-        } catch {}
+        } catch (e) {
+          logger.error("Graph search failed, falling back to compact", { error: e });
+        }
+        if (!graphSuccess && compact.length > 0) {
+          finalMode = "compact";
+        }
       }
 
       logger.info("Smart search compact", {
         query: data.query,
         results: compact.length,
-        mode: data.mode,
+        mode: finalMode,
       });
-      return { mode: data.mode === "graph" ? "graph" : "compact", results: compact };
+      return { mode: finalMode, results: compact };
     },
   );
 }

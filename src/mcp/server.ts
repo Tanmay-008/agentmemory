@@ -461,21 +461,24 @@ export function registerMcpEndpoints(
           }
 
           case "memory_graph_search": {
-            if (typeof args.query !== "string" || !args.query.trim()) {
-              return {
-                status_code: 400,
-                body: { error: "query is required for memory_graph_search" },
-              };
+            if (typeof args.query !== "string") {
+              return { status_code: 400, body: { error: "query must be a string" } };
             }
             const depth = asNumber(args.depth, 2) ?? 2;
-            if (depth > 2) {
+            if (!Number.isInteger(depth) || depth < 1 || depth > 2) {
               return {
                 status_code: 400,
-                body: { error: "depth_out_of_range", message: `BFS depth ${depth} exceeds maximum of 2` },
+                body: { error: "depth_out_of_range", message: `BFS depth must be an integer between 1 and 2, got ${depth}` },
               };
             }
             const limit = Math.max(1, Math.min(100, asNumber(args.limit, 20) ?? 20));
             const concepts = args.query.split(/\s+/).map((t: string) => t.trim().toLowerCase()).filter((t: string) => t.length > 1);
+            if (concepts.length === 0) {
+              return {
+                status_code: 400,
+                body: { error: "query_empty", message: "Query must contain at least one valid concept word." },
+              };
+            }
             const result = await sdk.trigger({
               function_id: "mem::concept-graph-search",
               payload: { concepts, depth, limit },
@@ -483,9 +486,7 @@ export function registerMcpEndpoints(
             return {
               status_code: 200,
               body: {
-                content: [
-                  { type: "text", text: JSON.stringify(result, null, 2) },
-                ],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
               },
             };
           }

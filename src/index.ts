@@ -370,7 +370,9 @@ async function main() {
     `[agentmemory] Endpoints: 107 REST + ${getAllTools().length} MCP tools + 6 MCP resources + 3 MCP prompts`,
   );
 
-  sdk.trigger({ function_id: "mem::concept-backfill", payload: {} }).catch(() => {});
+  sdk.trigger({ function_id: "mem::concept-backfill", payload: {} }).catch((e) => {
+    logger.error("Concept backfill failed", { error: e });
+  });
 
   const viewerPort = config.restPort + 2;
   const viewerServer = startViewerServer(

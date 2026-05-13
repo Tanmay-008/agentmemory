@@ -851,9 +851,11 @@ export function registerApiTriggers(
       }
       const body = (req.body ?? {}) as Record<string, unknown>;
       const payload: Record<string, unknown> = {};
-      if (body.query !== undefined) payload.query = body.query;
-      if (body.expandIds !== undefined) payload.expandIds = body.expandIds;
-      if (body.limit !== undefined) payload.limit = body.limit;
+      if (typeof body.query === "string") payload.query = body.query;
+      if (Array.isArray(body.expandIds)) {
+        payload.expandIds = body.expandIds.filter((id) => typeof id === "string");
+      }
+      if (typeof body.limit === "number") payload.limit = body.limit;
       if (body.mode === "graph") payload.mode = "graph";
       const result = await sdk.trigger({ function_id: "mem::smart-search", payload });
       return { status_code: 200, body: result };
@@ -908,6 +910,21 @@ export function registerApiTriggers(
     type: "http",
     function_id: "api::profile",
     config: { api_path: "/agentmemory/profile", http_method: "GET" },
+  });
+
+  sdk.registerFunction("api::concept-graph-viewer",
+    async (req: ApiRequest): Promise<Response> => {
+      const authErr = checkAuth(req, secret);
+      if (authErr) return authErr;
+      const limit = parseInt((req.query_params["limit"] as string) || "100", 10);
+      const result = await sdk.trigger({ function_id: "mem::concept-graph-viewer", payload: { limit } });
+      return { status_code: 200, body: result };
+    }
+  );
+  sdk.registerTrigger({
+    type: "http",
+    function_id: "api::concept-graph-viewer",
+    config: { api_path: "/agentmemory/concept-graph-viewer", http_method: "GET" },
   });
 
   sdk.registerFunction("api::export", 

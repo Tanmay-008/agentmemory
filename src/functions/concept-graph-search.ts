@@ -7,8 +7,9 @@ const MAX_BFS_DEPTH = 2;
 const MAX_NEIGHBORS_PER_NODE = 10;
 
 function decayedStrength(edge: ConceptEdge): number {
-  const daysSinceLastSeen =
-    (Date.now() - new Date(edge.lastSeenAt).getTime()) / (1000 * 60 * 60 * 24);
+  const timestamp = new Date(edge.lastSeenAt).getTime();
+  if (Number.isNaN(timestamp)) return 0.05;
+  const daysSinceLastSeen = (Date.now() - timestamp) / (1000 * 60 * 60 * 24);
   const decay = edge.strength * 0.05 * (daysSinceLastSeen / 7);
   return Math.max(0.05, edge.strength - decay);
 }
@@ -22,11 +23,11 @@ export function registerConceptGraphSearchFunction(sdk: ISdk, kv: StateKV): void
       }
 
       const depth = data.depth ?? 2;
-      if (depth > MAX_BFS_DEPTH) {
+      if (!Number.isInteger(depth) || depth < 1 || depth > MAX_BFS_DEPTH) {
         return {
           success: false,
           error: "depth_out_of_range",
-          message: `BFS depth ${depth} exceeds maximum of ${MAX_BFS_DEPTH}`,
+          message: `BFS depth must be an integer between 1 and ${MAX_BFS_DEPTH}, got ${depth}`,
         };
       }
 

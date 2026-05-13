@@ -881,6 +881,7 @@
   <div class="tab-bar" id="tab-bar">
     <button class="active" data-tab="dashboard">Dashboard</button>
     <button data-tab="graph">Graph</button>
+    <button data-tab="concepts" id="tab-concepts" style="display:none;">Concepts</button>
     <button data-tab="memories">Memories</button>
     <button data-tab="timeline">Timeline</button>
     <button data-tab="sessions">Sessions</button>
@@ -897,6 +898,20 @@
 
   <div id="view-dashboard" class="view active"></div>
   <div id="view-graph" class="view"></div>
+
+  <div id="view-concepts" class="view">
+    <div class="graph-container">
+      <div class="graph-canvas-wrap">
+        <canvas id="concepts-canvas"></canvas>
+      </div>
+      <div class="graph-sidebar">
+        <h3>Concept Graph</h3>
+        <p style="font-size: 11px; color: var(--ink-muted); margin-bottom: 12px;">Top co-occurring concepts.</p>
+        <div id="concepts-sidebar"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="view-memories" class="view"></div>
   <div id="view-lessons" class="view"></div>
   <div id="view-actions" class="view"></div>
@@ -1085,6 +1100,7 @@
         case 'activity': if (!state.activity.loaded) await loadActivity(); break;
         case 'profile': if (!state.profile.loaded) await loadProfile(); break;
         case 'replay': if (!state.replay.loaded) await loadReplay(); break;
+        case 'concepts': if (!state.concepts.loaded) await loadConcepts(); break;
       }
     }
 
@@ -1114,6 +1130,10 @@
       state.dashboard.crystals = (results[9] && results[9].crystals) || [];
       state.dashboard.relations = (results[7] && results[7].relations) || [];
       state.dashboard.loaded = true;
+      if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'graph') renderGraph();
+      if (tabId === 'concepts') renderConcepts();
+      if (tabId === 'memories') renderMemories();
       renderDashboard();
     }
 
@@ -1496,7 +1516,11 @@
       graphSim.canvas = canvas;
       graphSim.ctx = canvas.getContext('2d');
 
-      function resize() {
+      if ('__AGENTMEMORY_CONCEPT_GRAPH_VIEWER__' === 'true') {
+      document.getElementById('tab-concepts').style.display = 'inline-block';
+    }
+
+    function checkRestOnline() {
         var r = canvas.parentElement.getBoundingClientRect();
         canvas.width = r.width * window.devicePixelRatio;
         canvas.height = r.height * window.devicePixelRatio;
@@ -2031,6 +2055,111 @@
       state.memories.items = (result && result.memories) || [];
       state.memories.loaded = true;
       renderMemories();
+    }
+
+    function renderConcepts() {
+      var el = document.getElementById('view-concepts');
+      if (el.dataset.loaded) return;
+      el.dataset.loaded = 'true';
+      
+      apiGet('concept-graph-viewer?limit=50').then(function(data) {
+        if (!data || !data.success) {
+          document.getElementById('concepts-sidebar').innerHTML = '<div style="color:var(--accent);font-size:12px;">Failed to load.</div>';
+          return;
+        }
+        var nodes = data.nodes.map(function(id) { return { id: id, x: Math.random() * 800, y: Math.random() * 600, vx: 0, vy: 0 }; });
+        var edges = data.edges.map(function(e) { 
+          return {
+            source: nodes.find(function(n) { return n.id === e.from; }),
+            target: nodes.find(function(n) { return n.id === e.to; }),
+            strength: e.strength
+          };
+        }).filter(function(e) { return e.source && e.target; });
+        
+        var canvas = document.getElementById('concepts-canvas');
+        var ctx = canvas.getContext('2d');
+        var rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        
+        var cw = rect.width, ch = rect.height;
+        var dragging = null;
+
+        function step() {
+          var k = Math.sqrt(cw * ch / nodes.length);
+          for (var i=0; i<edges.length; i++) {
+            var e = edges[i];
+            var dx = e.target.x - e.source.x, dy = e.target.y - e.source.y;
+            var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+            var force = (dist - 100) * 0.05 * e.strength;
+            var fx = (dx / dist) * force, fy = (dy / dist) * force;
+            e.source.vx += fx; e.source.vy += fy;
+            e.target.vx -= fx; e.target.vy -= fy;
+          }
+          for (var i=0; i<nodes.length; i++) {
+            var n = nodes[i];
+            for (var j=0; j<nodes.length; j++) {
+              if (i===j) continue;
+              var n2 = nodes[j];
+              var dx = n.x - n2.x, dy = n.y - n2.y;
+              var distSq = dx*dx + dy*dy || 1;
+              var dist = Math.sqrt(distSq);
+              if (dist < 300) {
+                var force = 1000 / distSq;
+                n.vx += (dx / dist) * force; n.vy += (dy / dist) * force;
+              }
+            }
+          }
+          for (var i=0; i<nodes.length; i++) {
+            var n = nodes[i];
+            n.vx -= (n.x - cw/2) * 0.01; n.vy -= (n.y - ch/2) * 0.01;
+            n.vx *= 0.85; n.vy *= 0.85;
+            if (n !== dragging) { n.x += n.vx; n.y += n.vy; }
+          }
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, cw, ch);
+          ctx.lineWidth = 1;
+          for (var i=0; i<edges.length; i++) {
+            var e = edges[i];
+            ctx.strokeStyle = 'rgba(150,150,150,' + (0.2 + e.strength * 0.5) + ')';
+            ctx.beginPath(); ctx.moveTo(e.source.x, e.source.y); ctx.lineTo(e.target.x, e.target.y); ctx.stroke();
+          }
+          ctx.font = '12px var(--font-ui)';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          for (var i=0; i<nodes.length; i++) {
+            var n = nodes[i];
+            ctx.fillStyle = n === dragging ? 'var(--ink)' : 'var(--bg-inset)';
+            ctx.beginPath(); ctx.arc(n.x, n.y, 16, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = 'var(--border)'; ctx.stroke();
+            ctx.fillStyle = n === dragging ? 'var(--bg)' : 'var(--ink)';
+            ctx.fillText(n.id.substring(0, 4), n.x, n.y);
+          }
+        }
+        
+        var timer;
+        function loop() { step(); draw(); timer = requestAnimationFrame(loop); }
+        loop();
+
+        canvas.addEventListener('mousedown', function(e) {
+          var rect = canvas.getBoundingClientRect();
+          var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+          for (var i=0; i<nodes.length; i++) {
+            var dx = nodes[i].x - mx, dy = nodes[i].y - my;
+            if (dx*dx + dy*dy < 256) { dragging = nodes[i]; break; }
+          }
+        });
+        window.addEventListener('mousemove', function(e) {
+          if (!dragging) return;
+          var rect = canvas.getBoundingClientRect();
+          dragging.x = e.clientX - rect.left; dragging.y = e.clientY - rect.top;
+        });
+        window.addEventListener('mouseup', function() { dragging = null; });
+      }).catch(function() {
+        document.getElementById('concepts-sidebar').innerHTML = '<div style="color:var(--accent);font-size:12px;">Failed to load graph.</div>';
+      });
     }
 
     function renderMemories() {

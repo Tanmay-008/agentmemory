@@ -22,21 +22,27 @@ export function registerConceptBackfillFunction(sdk: ISdk, kv: StateKV): void {
       );
 
       let processed = 0;
+      let errors = 0;
       const batchSize = 50;
 
       for (let i = 0; i < eligible.length; i += batchSize) {
         const batch = eligible.slice(i, i + batchSize);
-        await Promise.all(
+        const results = await Promise.allSettled(
           batch.map((m) =>
-            sdk
-              .trigger({
-                function_id: "mem::concept-edge-upsert",
-                payload: { concepts: m.concepts },
-              })
-              .catch(() => {}),
+            sdk.trigger({
+              function_id: "mem::concept-edge-upsert",
+              payload: { concepts: m.concepts },
+            })
           ),
         );
-        processed += batch.length;
+        for (const res of results) {
+          if (res.status === "rejected") errors++;
+          else processed++;
+        }
+      }
+
+      if (errors > 0) {
+        throw new Error(`Concept backfill failed to process ${errors} items.`);
       }
 
       await kv.set(KV.config, CONFIG_KEY, { done: true, completedAt: new Date().toISOString() });
