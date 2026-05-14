@@ -138,7 +138,7 @@ agentmemory works with any agent that supports hooks, MCP, or REST API. All agen
 <sub>AgentSDKProvider</sub>
 </td>
 <td align="center" width="12.5%">
-<img src="https://img.shields.io/badge/104-endpoints-1f6feb?style=flat-square" alt="REST API" width="48" /><br/>
+<img src="https://img.shields.io/badge/108-endpoints-1f6feb?style=flat-square" alt="REST API" width="48" /><br/>
 <strong>Any agent</strong><br/>
 <sub>REST API</sub>
 </td>
@@ -954,7 +954,7 @@ Create `~/.agentmemory/.env`:
 
 <h2 id="api"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/tags/light/section-api.svg"><img src="assets/tags/section-api.svg" alt="API" height="32" /></picture></h2>
 
-107 endpoints on port `3111`. The REST API binds to `127.0.0.1` by default. Protected endpoints require `Authorization: Bearer <secret>` when `AGENTMEMORY_SECRET` is set, and mesh sync endpoints require `AGENTMEMORY_SECRET` on both peers.
+108 endpoints on port `3111`. The REST API binds to `127.0.0.1` by default. Protected endpoints require `Authorization: Bearer <secret>` when `AGENTMEMORY_SECRET` is set, and mesh sync endpoints require `AGENTMEMORY_SECRET` on both peers.
 
 <details>
 <summary>Key endpoints</summary>

@@ -90,16 +90,18 @@ export function registerSmartSearchFunction(
       if (data.mode === "graph") {
         let graphSuccess = false;
         try {
+          const concepts = data.query
+            .toLowerCase()
+            .replace(/[^\w\s]/g, "")
+            .split(/\s+/)
+            .filter((t) => t.length > 1);
+
           const graphResult = await sdk.trigger<
             { concepts: string[]; depth: number; limit: number },
             { success: boolean; results?: Array<{ memoryId: string; score: number; matchedConcepts: string[] }> }
           >({
             function_id: "mem::concept-graph-search",
-            payload: {
-              concepts: data.query.split(/\s+/).filter((t) => t.length > 1),
-              depth: 2,
-              limit,
-            },
+            payload: { concepts, depth: 2, limit },
           });
 
           if (graphResult.success && graphResult.results && graphResult.results.length > 0) {
@@ -118,7 +120,7 @@ export function registerSmartSearchFunction(
                   obsId,
                   sessionId: "",
                   title: mem.title,
-                  type: mem.type as any,
+                  type: (mem.type as "observation" | "message" | "tool_call" | "tool_result" | "tool_error") || "observation",
                   score: gr.score * 0.8,
                   timestamp: mem.createdAt,
                 });
@@ -131,7 +133,7 @@ export function registerSmartSearchFunction(
         } catch (e) {
           logger.error("Graph search failed, falling back to compact", { error: e });
         }
-        if (!graphSuccess && compact.length > 0) {
+        if (!graphSuccess) {
           finalMode = "compact";
         }
       }

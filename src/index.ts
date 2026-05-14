@@ -95,6 +95,7 @@ import { DedupMap } from "./functions/dedup.js";
 import { registerHealthMonitor } from "./health/monitor.js";
 import { initMetrics, OTEL_CONFIG } from "./telemetry/setup.js";
 import { VERSION } from "./version.js";
+import { logger } from "./logger.js";
 
 function hasGetMeter(
   sdk: unknown,
@@ -367,7 +368,7 @@ async function main() {
     `[agentmemory] Ready. ${embeddingProvider ? "Triple-stream (BM25+Vector+Graph)" : "BM25+Graph"} search active.`,
   );
   console.log(
-    `[agentmemory] Endpoints: 107 REST + ${getAllTools().length} MCP tools + 6 MCP resources + 3 MCP prompts`,
+    `[agentmemory] Endpoints: 108 REST + ${getAllTools().length} MCP tools + 6 MCP resources + 3 MCP prompts`,
   );
 
   sdk.trigger({ function_id: "mem::concept-backfill", payload: {} }).catch((e) => {
@@ -390,7 +391,7 @@ async function main() {
     const autoForgetTimer = setInterval(async () => {
       try {
         await sdk.trigger({ function_id: "mem::auto-forget", payload: { dryRun: false } });
-      } catch {}
+      } catch { }
     }, autoForgetIntervalMs);
     autoForgetTimer.unref();
     console.log(`[agentmemory] Auto-forget: enabled (every ${autoForgetIntervalMs / 60000}m)`);
@@ -400,7 +401,7 @@ async function main() {
     const lessonDecayTimer = setInterval(async () => {
       try {
         await sdk.trigger({ function_id: "mem::lesson-decay-sweep", payload: {} });
-      } catch {}
+      } catch { }
     }, 86400000);
     lessonDecayTimer.unref();
     console.log(`[agentmemory] Lesson decay sweep: enabled (every 24h)`);
@@ -410,7 +411,7 @@ async function main() {
     const insightDecayTimer = setInterval(async () => {
       try {
         await sdk.trigger({ function_id: "mem::insight-decay-sweep", payload: {} });
-      } catch {}
+      } catch { }
     }, 86400000);
     insightDecayTimer.unref();
   }
@@ -419,7 +420,7 @@ async function main() {
     const consolidationTimer = setInterval(async () => {
       try {
         await sdk.trigger({ function_id: "mem::consolidate-pipeline", payload: {} });
-      } catch {}
+      } catch { }
     }, consolidationIntervalMs);
     consolidationTimer.unref();
     console.log(`[agentmemory] Auto-consolidation: enabled (every ${consolidationIntervalMs / 60000}m)`);

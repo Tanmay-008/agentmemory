@@ -1009,6 +1009,7 @@
       crystals: { loaded: false, items: [], search: '', lessonMap: {} },
       profile: { loaded: false, projects: [], selectedProject: '', data: null },
       replay: { loaded: false, sessions: [], selectedId: '', timeline: null, cursor: 0, playing: false, speed: 1, timer: null, startAt: 0, offsetAt: 0 },
+      concepts: { loaded: false },
       flagsConfig: null,
       ws: null
     };
@@ -1100,7 +1101,7 @@
         case 'activity': if (!state.activity.loaded) await loadActivity(); break;
         case 'profile': if (!state.profile.loaded) await loadProfile(); break;
         case 'replay': if (!state.replay.loaded) await loadReplay(); break;
-        case 'concepts': if (!state.concepts.loaded) await loadConcepts(); break;
+        case 'concepts': if (!state.concepts.loaded) renderConcepts(); break;
       }
     }
 
@@ -1130,10 +1131,6 @@
       state.dashboard.crystals = (results[9] && results[9].crystals) || [];
       state.dashboard.relations = (results[7] && results[7].relations) || [];
       state.dashboard.loaded = true;
-      if (tabId === 'dashboard') renderDashboard();
-      if (tabId === 'graph') renderGraph();
-      if (tabId === 'concepts') renderConcepts();
-      if (tabId === 'memories') renderMemories();
       renderDashboard();
     }
 
@@ -1516,11 +1513,7 @@
       graphSim.canvas = canvas;
       graphSim.ctx = canvas.getContext('2d');
 
-      if ('__AGENTMEMORY_CONCEPT_GRAPH_VIEWER__' === 'true') {
-      document.getElementById('tab-concepts').style.display = 'inline-block';
-    }
-
-    function checkRestOnline() {
+      function resize() {
         var r = canvas.parentElement.getBoundingClientRect();
         canvas.width = r.width * window.devicePixelRatio;
         canvas.height = r.height * window.devicePixelRatio;
@@ -2059,14 +2052,14 @@
 
     function renderConcepts() {
       var el = document.getElementById('view-concepts');
-      if (el.dataset.loaded) return;
-      el.dataset.loaded = 'true';
+      if (state.concepts.loaded) return;
       
       apiGet('concept-graph-viewer?limit=50').then(function(data) {
         if (!data || !data.success) {
           document.getElementById('concepts-sidebar').innerHTML = '<div style="color:var(--accent);font-size:12px;">Failed to load.</div>';
           return;
         }
+        state.concepts.loaded = true;
         var nodes = data.nodes.map(function(id) { return { id: id, x: Math.random() * 800, y: Math.random() * 600, vx: 0, vy: 0 }; });
         var edges = data.edges.map(function(e) { 
           return {
@@ -3864,6 +3857,9 @@
       else if (e.key === 'ArrowRight') { e.preventDefault(); stepReplay(1); }
     });
 
+    if ('__AGENTMEMORY_CONCEPT_GRAPH_VIEWER__' === 'true') {
+      document.getElementById('tab-concepts').style.display = 'inline-block';
+    }
     loadTab('dashboard');
     connectWs();
     startDashboardAutoRefresh();

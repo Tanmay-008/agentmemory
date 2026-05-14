@@ -56,7 +56,7 @@ export function registerConceptBackfillFunction(sdk: ISdk, kv: StateKV): void {
 
       logger.info("Concept backfill completed", {
         processed,
-        total: memories.length,
+        total: eligible.length,
       });
 
       return { success: true, processed, total: memories.length };
