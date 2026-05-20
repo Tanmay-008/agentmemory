@@ -131,6 +131,16 @@ function readBody(req: IncomingMessage): Promise<string> {
 
 const MAX_VIEWER_PORT_RETRIES = 10;
 
+let boundViewerPort: number | null = null;
+let viewerSkipped = false;
+
+export function getBoundViewerPort(): number | null {
+  return boundViewerPort;
+}
+export function getViewerSkipped(): boolean {
+  return viewerSkipped;
+}
+
 export function startViewerServer(
   port: number,
   _kv: unknown,
@@ -227,6 +237,7 @@ export function startViewerServer(
   };
 
   server.on("listening", () => {
+    boundViewerPort = currentPort;
     if (currentPort === requestedPort) {
       console.log(`[agentmemory] Viewer: http://localhost:${currentPort}`);
     } else {
@@ -244,10 +255,12 @@ export function startViewerServer(
       return;
     }
     if (err.code === "EADDRINUSE") {
+      viewerSkipped = true;
       console.warn(
         `[agentmemory] Viewer ports ${requestedPort}-${requestedPort + MAX_VIEWER_PORT_RETRIES} all in use, skipping viewer.`,
       );
     } else {
+      viewerSkipped = true;
       console.error(`[agentmemory] Viewer error:`, err.message);
     }
   });
