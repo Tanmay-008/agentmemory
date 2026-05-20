@@ -148,6 +148,10 @@ export function startViewerServer(
   secret?: string,
   restPort?: number,
 ): Server {
+  // Reset exported runtime state for each start attempt.
+  boundViewerPort = null;
+  viewerSkipped = false;
+
   const resolvedRestPort = restPort ?? port - 2;
   const requestedPort = port;
   // Computed lazily on first request — `port` may be 0 here (OS-assigned)
@@ -237,7 +241,12 @@ export function startViewerServer(
   };
 
   server.on("listening", () => {
-    boundViewerPort = currentPort;
+    const addr = server.address();
+    boundViewerPort =
+      addr && typeof addr === "object" && "port" in addr
+        ? addr.port
+        : currentPort;
+    viewerSkipped = false;
     if (currentPort === requestedPort) {
       console.log(`[agentmemory] Viewer: http://localhost:${currentPort}`);
     } else {
@@ -255,11 +264,13 @@ export function startViewerServer(
       return;
     }
     if (err.code === "EADDRINUSE") {
+      boundViewerPort = null;
       viewerSkipped = true;
       console.warn(
         `[agentmemory] Viewer ports ${requestedPort}-${requestedPort + MAX_VIEWER_PORT_RETRIES} all in use, skipping viewer.`,
       );
     } else {
+      boundViewerPort = null;
       viewerSkipped = true;
       console.error(`[agentmemory] Viewer error:`, err.message);
     }
